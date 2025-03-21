@@ -1,7 +1,5 @@
-# FIXME: The following logic should be moved from here and also from `core/perf_test/CMakeLists.txt` and
-# `simd/performance_tests/CMakeLists.txt` to the root `CMakeLists.txt` in the form of a macro
 # Find or download google/benchmark library
-find_package(benchmark QUIET 1.8.3)
+find_package(benchmark QUIET 1.5.6)
 if(benchmark_FOUND)
   message(STATUS "Using google benchmark found in ${benchmark_DIR}")
 else()
@@ -13,8 +11,8 @@ else()
   FetchContent_Declare(
     googlebenchmark
     DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-    URL https://github.com/google/benchmark/archive/refs/tags/v1.8.3.tar.gz
-    URL_HASH MD5=7b93dd03670665684f1b2e9b70ad17fe
+    URL https://github.com/google/benchmark/archive/refs/tags/v1.7.1.tar.gz
+    URL_HASH MD5=0459a6c530df9851bee6504c3e37c2e7
   )
   FetchContent_MakeAvailable(googlebenchmark)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
@@ -30,35 +28,28 @@ else()
   target_compile_options(benchmark_main PRIVATE -w)
 endif()
 
-# FIXME: This function should be moved from here and also from `core/perf_test/CMakeLists.txt` to
-# the root `CMakeLists.txt`
-# FIXME: Could NAME be a one_value_keyword specified in cmake_parse_arguments?
-function(KOKKOS_ADD_BENCHMARK NAME)
-  cmake_parse_arguments(BENCHMARK "" "" "SOURCES" ${ARGN})
-  if(DEFINED BENCHMARK_UNPARSED_ARGUMENTS)
-    message(WARNING "Unexpected arguments when adding a benchmark: " ${BENCHMARK_UNPARSED_ARGUMENTS})
-  endif()
-
-  set(BENCHMARK_NAME Kokkos_${NAME})
-  # FIXME: BenchmarkMain.cpp and Benchmark_Context.cpp should be moved to a common location from which
-  # they can be used by all performance tests.
-  list(APPEND BENCHMARK_SOURCES ../../core/perf_test/BenchmarkMain.cpp ../../core/perf_test/Benchmark_Context.cpp)
-
+foreach(BENCH_TYPE Host HostForceSerial Device)
+  kokkos_include_directories(${CMAKE_CURRENT_BINARY_DIR})
+  kokkos_include_directories(REQUIRED_DURING_INSTALLATION_TESTING ${CMAKE_CURRENT_SOURCE_DIR})
+  kokkos_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+  
+  set(BENCHMARK_NAME Kokkos_Simd${BENCH_TYPE}PerformanceTest)
+  list(APPEND BENCHMARK_SOURCES BenchmarkMain.cpp Benchmark_Context.cpp)
+  
   add_executable(${BENCHMARK_NAME} ${BENCHMARK_SOURCES})
   target_link_libraries(${BENCHMARK_NAME} PRIVATE benchmark::benchmark Kokkos::kokkos impl_git_version)
   target_include_directories(${BENCHMARK_NAME} SYSTEM PRIVATE ${benchmark_SOURCE_DIR}/include)
-
+  string(TOUPPER ${BENCH_TYPE} BENCH_TYPE_MACRO)
+  target_compile_definitions(${BENCHMARK_NAME} PRIVATE -DKOKKOS_SIMD_PERFTEST_${BENCH_TYPE_MACRO})
+  
   # FIXME: This alone will not work. It might need an architecture and standard which need to be defined on target level.
   # It will potentially go away with #7582.
   foreach(SOURCE_FILE ${BENCHMARK_SOURCES})
     set_source_files_properties(${SOURCE_FILE} PROPERTIES LANGUAGE ${KOKKOS_COMPILE_LANGUAGE})
   endforeach()
-
+  
   string(TIMESTAMP BENCHMARK_TIME "%Y-%m-%d_T%H-%M-%S" UTC)
   set(BENCHMARK_ARGS --benchmark_counters_tabular=true --benchmark_out=${BENCHMARK_NAME}_${BENCHMARK_TIME}.json)
-
+  
   add_test(NAME ${BENCHMARK_NAME} COMMAND ${BENCHMARK_NAME} ${BENCHMARK_ARGS})
-endfunction()
-
-kokkos_add_benchmark(PerformanceTest_InclusiveScan SOURCES test_inclusive_scan.cpp)
-kokkos_add_benchmark(PerformanceTest_Random SOURCES test_random.cpp)
+endforeach()
