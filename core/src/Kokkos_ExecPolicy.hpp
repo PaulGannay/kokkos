@@ -328,6 +328,19 @@ class ImplRangePolicy<ExecSpace, Properties...>
 };
 
 }  // namespace Impl
+
+/** \brief  Execution policy for work over a single thread
+ */
+template <class... Properties>
+class SinglePolicy : public RangePolicy<Properties...> {
+ public:
+  template <class... OtherProperties>
+  SinglePolicy(const SinglePolicy<OtherProperties...>& p)
+      : RangePolicy<Properties...>(p) {}
+
+  inline SinglePolicy() : RangePolicy<Properties...>(0, 1) {}
+};
+
 }  // namespace Kokkos
 
 //----------------------------------------------------------------------------
