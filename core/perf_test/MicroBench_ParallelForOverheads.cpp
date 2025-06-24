@@ -25,7 +25,7 @@
 // the time it takes to call Kokkos::parallel_for
 static void ParallelFor_NoOverhead(benchmark::State& state) {
   std::string name = "kernel";
-  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 0);
+  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 1);
   const auto lambda = KOKKOS_LAMBDA(int){};
 
   for (auto _ : state) {
@@ -36,7 +36,7 @@ BENCHMARK(ParallelFor_NoOverhead)->Unit(benchmark::kNanosecond);
 
 // Cost of creating the default name for the kernel
 static void ParallelFor_Overhead_DefaultedName(benchmark::State& state) {
-  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 0);
+  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 1);
   const auto lambda = KOKKOS_LAMBDA(int){};
 
   for (auto _ : state) {
@@ -48,7 +48,7 @@ BENCHMARK(ParallelFor_Overhead_DefaultedName)->Unit(benchmark::kNanosecond);
 // Cost of constructing a small string (it should fit in the small string
 // optimisation) to use as the kernel name.
 static void ParallelFor_Overhead_EmptyName(benchmark::State& state) {
-  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 0);
+  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 1);
   const auto lambda = KOKKOS_LAMBDA(int){};
 
   for (auto _ : state) {
@@ -63,7 +63,7 @@ static void ParallelFor_Overhead_UsingLongKernelName(benchmark::State& state) {
   std::string name =
       "A very long string that should not be able to fit in the short string "
       "optimization of std::string";
-  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 0);
+  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 1);
   const auto lambda = KOKKOS_LAMBDA(int){};
 
   for (auto _ : state) {
@@ -76,7 +76,7 @@ BENCHMARK(ParallelFor_Overhead_UsingLongKernelName)
 // Cost for constructing a name that will not fit inside short string
 // optimization
 static void ParallelFor_Overhead_LongNameConstruction(benchmark::State& state) {
-  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 0);
+  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 1);
   const auto lambda = KOKKOS_LAMBDA(int){};
 
   for (auto _ : state) {
@@ -90,7 +90,7 @@ BENCHMARK(ParallelFor_Overhead_LongNameConstruction)
 // Is there a cost for creating the lambda?
 static void ParallelFor_Overhead_LambdaCreation(benchmark::State& state) {
   std::string name = "kernel";
-  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 0);
+  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 1);
 
   for (auto _ : state) {
     Kokkos::parallel_for(name, policy, KOKKOS_LAMBDA(int){});
@@ -104,7 +104,7 @@ struct Func {
 };
 static void ParallelFor_Overhead_Functor(benchmark::State& state) {
   std::string name = "kernel";
-  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 0);
+  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 1);
   Func func;
 
   for (auto _ : state) {
@@ -120,7 +120,7 @@ struct
 };
 static void ParallelFor_Overhead_FunctorLongName(benchmark::State& state) {
   std::string name = "kernel";
-  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 0);
+  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 1);
   FunctorWithAVeryLongNameAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
       func;
 
@@ -140,7 +140,7 @@ static void ParallelFor_Overhead_LongTag(benchmark::State& state) {
   Kokkos::RangePolicy<
       Kokkos::DefaultExecutionSpace,
       TagWithALongNameAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA>
-      policy(0, 0);
+      policy(0, 1);
   const auto lambda = KOKKOS_LAMBDA(
       TagWithALongNameAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,
       int){};
@@ -168,7 +168,7 @@ BENCHMARK(ParallelFor_Overhead_PolicyCreation)->Unit(benchmark::kNanosecond);
 // Cost of calling a space specific fence in-between kernel
 static void ParallelFor_Overhead_SpaceSpecificFence(benchmark::State& state) {
   std::string name = "kernel";
-  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 0);
+  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 1);
   const auto lambda = KOKKOS_LAMBDA(int){};
   Kokkos::DefaultExecutionSpace space;
 
@@ -187,7 +187,7 @@ static void ParallelFor_Overhead_NamedSpaceSpecificFence(
   std::string kernel_name = "kernel";
   const auto lambda       = KOKKOS_LAMBDA(int){};
   Kokkos::DefaultExecutionSpace space;
-  Kokkos::RangePolicy policy(space, 0, 0);
+  Kokkos::RangePolicy policy(space, 0, 1);
   std::string fence_name = "fence";
 
   for (auto _ : state) {
@@ -203,7 +203,7 @@ BENCHMARK(ParallelFor_Overhead_NamedSpaceSpecificFence)
 static void ParallelFor_Overhead_FenceWithSpaceCreation(
     benchmark::State& state) {
   std::string name = "kernel";
-  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 0);
+  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 1);
   const auto lambda = KOKKOS_LAMBDA(int){};
 
   for (auto _ : state) {
@@ -217,7 +217,7 @@ BENCHMARK(ParallelFor_Overhead_FenceWithSpaceCreation)
 // Cost of calling a global fence with a non defaulted name in-between kernels
 static void ParallelFor_Overhead_NamedGlobalFence(benchmark::State& state) {
   std::string kernel_name = "kernel";
-  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 0);
+  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 1);
   const auto lambda      = KOKKOS_LAMBDA(int){};
   std::string fence_name = "fence";
 
@@ -232,7 +232,7 @@ BENCHMARK(ParallelFor_Overhead_NamedGlobalFence)->Unit(benchmark::kNanosecond);
 // creation cost)
 static void ParallelFor_Overhead_GlobalFence(benchmark::State& state) {
   std::string name = "kernel";
-  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 0);
+  Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace> policy(0, 1);
   const auto lambda = KOKKOS_LAMBDA(int){};
 
   for (auto _ : state) {
@@ -245,7 +245,7 @@ BENCHMARK(ParallelFor_Overhead_GlobalFence)->Unit(benchmark::kNanosecond);
 // Full overhead for a classic call to parallel_for
 static void ParallelFor_Overhead_Full(benchmark::State& state) {
   for (auto _ : state) {
-    Kokkos::parallel_for("Name not fitting in the short string optimisation", 0,
+    Kokkos::parallel_for("Name not fitting in the short string optimisation", 1,
                          KOKKOS_LAMBDA(int){});
     Kokkos::fence();
   }
