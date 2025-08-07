@@ -329,11 +329,13 @@ class ImplRangePolicy<ExecSpace, Properties...>
 
 }  // namespace Impl
 
-/** \brief  Execution policy for work over a single thread
+/** \brief  Execution policy to execute work over a single thread
  */
 template <class... Properties>
 class SinglePolicy : public RangePolicy<Properties...> {
  public:
+  using base_class = RangePolicy<Properties...>;
+
   template <class... OtherProperties>
   SinglePolicy(const SinglePolicy<OtherProperties...>& p)
       : RangePolicy<Properties...>(p) {}
