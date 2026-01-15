@@ -1829,8 +1829,11 @@ struct TestFloatingPointRemainderFunction : FloatingPointComparison {
     // special values
     using Kokkos::isinf;
     using Kokkos::isnan;
-    if (!isinf(fmod(-KE::infinity<float>::value, 1.f)) ||
-        !isnan(fmod(-KE::quiet_NaN<float>::value, 1.f))) {
+    if (!isnan(fmod(-KE::infinity<float>::value, 1.f)) ||
+        !(fmod(5.f, -KE::infinity<float>::value) == 5.f) ||
+        !isnan(fmod(5.f, 0.f)) ||
+        !isnan(fmod(-KE::quiet_NaN<float>::value, 1.f)) ||
+        !isnan(fmod(1.f, -KE::quiet_NaN<float>::value))) {
       ++e;
       Kokkos::printf("failed fmod(floating_point) special values\n");
     }
