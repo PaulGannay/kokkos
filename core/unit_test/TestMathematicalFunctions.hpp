@@ -1791,14 +1791,14 @@ struct TestFloatingPointRemainderFunction : FloatingPointComparison {
   }
   KOKKOS_FUNCTION void operator()(int, int& e) const {
     using Kokkos::fmod;
-    if (!compare(fmod(6.2f, 4.f), 2.2f, 1) &&
+    if (!compare(fmod(6.2f, 4.f), 2.2f, 1) ||
         !compare(fmod(-6.2f, 4.f), -2.2f, 1)) {
       ++e;
       Kokkos::printf("failed fmod(float)\n");
     }
     if (!compare(
             fmod(static_cast<KE::half_t>(6.2f), static_cast<KE::half_t>(4.f)),
-            static_cast<KE::half_t>(2.2f), 1) &&
+            static_cast<KE::half_t>(2.2f), 1) ||
         !compare(
             fmod(static_cast<KE::half_t>(-6.2f), static_cast<KE::half_t>(4.f)),
             -static_cast<KE::half_t>(2.2f), 1)) {
@@ -1807,19 +1807,19 @@ struct TestFloatingPointRemainderFunction : FloatingPointComparison {
     }
     if (!compare(
             fmod(static_cast<KE::bhalf_t>(6.2f), static_cast<KE::bhalf_t>(4.f)),
-            static_cast<KE::bhalf_t>(2.2f), 1) &&
+            static_cast<KE::bhalf_t>(2.2f), 1) ||
         !compare(fmod(static_cast<KE::bhalf_t>(-6.2f),
                       static_cast<KE::bhalf_t>(4.f)),
                  -static_cast<KE::bhalf_t>(2.2f), 1)) {
       ++e;
       Kokkos::printf("failed fmod(KE::bhalf_t)\n");
     }
-    if (!compare(fmod(6.2, 4.), 2.2, 1) && !compare(fmod(-6.2, 4.), -2.2, 1)) {
+    if (!compare(fmod(6.2, 4.), 2.2, 1) || !compare(fmod(-6.2, 4.), -2.2, 1)) {
       ++e;
       Kokkos::printf("failed fmod(double)\n");
     }
 #ifdef MATHEMATICAL_FUNCTIONS_HAVE_LONG_DOUBLE_OVERLOADS
-    if (!compare(fmod(6.2l, 4.l), 2.2l, 1) &&
+    if (!compare(fmod(6.2l, 4.l), 2.2l, 1) ||
         !compare(fmod(-6.2l, 4.l), -2.2l, 1)) {
       ++e;
       Kokkos::printf("failed fmod(long double)\n");
@@ -1829,7 +1829,7 @@ struct TestFloatingPointRemainderFunction : FloatingPointComparison {
     // special values
     using Kokkos::isinf;
     using Kokkos::isnan;
-    if (!isinf(fmod(-KE::infinity<float>::value, 1.f)) &&
+    if (!isinf(fmod(-KE::infinity<float>::value, 1.f)) ||
         !isnan(fmod(-KE::quiet_NaN<float>::value, 1.f))) {
       ++e;
       Kokkos::printf("failed fmod(floating_point) special values\n");
@@ -1866,14 +1866,14 @@ struct TestIEEEFloatingPointRemainderFunction : FloatingPointComparison {
   }
   KOKKOS_FUNCTION void operator()(int, int& e) const {
     using Kokkos::remainder;
-    if (!compare(remainder(6.2f, 4.f), 2.2f, 2) &&
+    if (!compare(remainder(6.2f, 4.f), 2.2f, 2) ||
         !compare(remainder(-6.2f, 4.f), 2.2f, 1)) {
       ++e;
       Kokkos::printf("failed remainder(float)\n");
     }
     if (!compare(remainder(static_cast<KE::half_t>(6.2f),
                            static_cast<KE::half_t>(4.f)),
-                 static_cast<KE::half_t>(2.2f), 1) &&
+                 static_cast<KE::half_t>(2.2f), 1) ||
         !compare(remainder(static_cast<KE::half_t>(-6.2f),
                            static_cast<KE::half_t>(4.f)),
                  -static_cast<KE::half_t>(2.2f), 1)) {
@@ -1882,20 +1882,20 @@ struct TestIEEEFloatingPointRemainderFunction : FloatingPointComparison {
     }
     if (!compare(remainder(static_cast<KE::bhalf_t>(6.2f),
                            static_cast<KE::bhalf_t>(4.f)),
-                 static_cast<KE::bhalf_t>(2.2f), 1) &&
+                 static_cast<KE::bhalf_t>(2.2f), 1) ||
         !compare(remainder(static_cast<KE::bhalf_t>(-6.2f),
                            static_cast<KE::bhalf_t>(4.f)),
                  -static_cast<KE::bhalf_t>(2.2f), 1)) {
       ++e;
       Kokkos::printf("failed remainder(KE::bhalf_t)\n");
     }
-    if (!compare(remainder(6.2, 4.), 2.2, 2) &&
+    if (!compare(remainder(6.2, 4.), 2.2, 2) ||
         !compare(remainder(-6.2, 4.), 2.2, 1)) {
       ++e;
       Kokkos::printf("failed remainder(double)\n");
     }
 #ifdef MATHEMATICAL_FUNCTIONS_HAVE_LONG_DOUBLE_OVERLOADS
-    if (!compare(remainder(6.2l, 4.l), 2.2l, 1) &&
+    if (!compare(remainder(6.2l, 4.l), 2.2l, 1) ||
         !compare(remainder(-6.2l, 4.l), -2.2l, 1)) {
       ++e;
       Kokkos::printf("failed remainder(long double)\n");
@@ -1905,7 +1905,7 @@ struct TestIEEEFloatingPointRemainderFunction : FloatingPointComparison {
     // special values
     using Kokkos::isinf;
     using Kokkos::isnan;
-    if (!isinf(remainder(-KE::infinity<float>::value, 1.f)) &&
+    if (!isinf(remainder(-KE::infinity<float>::value, 1.f)) ||
         !isnan(remainder(-KE::quiet_NaN<float>::value, 1.f))) {
       ++e;
       Kokkos::printf(
