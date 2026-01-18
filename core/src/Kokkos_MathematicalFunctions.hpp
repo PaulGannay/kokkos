@@ -604,7 +604,6 @@ KOKKOS_IMPL_MATH_BINARY_FUNCTION(nextafter)
 // nexttoward
 KOKKOS_IMPL_MATH_BINARY_FUNCTION(copysign)
 // Classification and comparison
-// fpclassify
 KOKKOS_IMPL_MATH_UNARY_PREDICATE(isfinite)
 KOKKOS_IMPL_MATH_UNARY_PREDICATE(isinf)
 KOKKOS_IMPL_MATH_UNARY_PREDICATE(isnan)
@@ -624,6 +623,38 @@ KOKKOS_INLINE_FUNCTION std::enable_if_t<std::is_integral_v<T>, bool> isnormal(
 }
 #else
 KOKKOS_IMPL_MATH_UNARY_PREDICATE(isnormal)
+#endif
+#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_SYCL)
+template <class T>
+KOKKOS_INLINE_FUNCTION constexpr std::enable_if_t<
+    std::is_same_v<T, float> || std::is_same_v<T, double> ||
+        std::is_same_v<T, long double>,
+    int>
+fpclassify(const T x) {
+  if (Kokkos::isinf(x)) {
+    return FP_INFINITE;
+  } else if (Kokkos::isnan(x)) {
+    return FP_NAN;
+  } else if (x == 0) {
+    return FP_ZERO;
+  } else if (Kokkos::isnormal(x)) {
+    return FP_NORMAL;
+  } else {
+    return FP_SUBNORMAL;
+  }
+}
+
+template <class T>
+KOKKOS_INLINE_FUNCTION constexpr std::enable_if_t<std::is_integral_v<T>, int>
+fpclassify(const T x) {
+  if (x == 0) {
+    return FP_ZERO;
+  } else {
+    return FP_NORMAL;
+  }
+}
+#else
+KOKKOS_IMPL_MATH_UNARY_FUNCTION(fpclassify)
 #endif
 KOKKOS_IMPL_MATH_UNARY_PREDICATE(signbit)
 #if defined(KOKKOS_ENABLE_CUDA)

@@ -509,6 +509,38 @@ KOKKOS_INLINE_FUNCTION bool isnormal(Kokkos::Experimental::bhalf_t x) {
 #endif
 
 #if defined(KOKKOS_HALF_T_IS_FLOAT) && !KOKKOS_HALF_T_IS_FLOAT
+KOKKOS_INLINE_FUNCTION int fpclassify(Kokkos::Experimental::half_t x) {
+  if (Kokkos::isinf(x)) {
+      return FP_INFINITE;
+  } else if (Kokkos::isnan(x)) {
+      return FP_NAN;
+  } else if (x == 0) {
+      return FP_ZERO;
+  } else if (Kokkos::isnormal(x)) {
+      return FP_NORMAL;
+  } else {
+      return FP_SUBNORMAL;
+  }
+}
+#endif
+
+#if defined(KOKKOS_BHALF_T_IS_FLOAT) && !KOKKOS_BHALF_T_IS_FLOAT
+KOKKOS_INLINE_FUNCTION int fpclassify(Kokkos::Experimental::bhalf_t x) {
+  if (Kokkos::isinf(x)) {
+      return FP_INFINITE;
+  } else if (Kokkos::isnan(x)) {
+      return FP_NAN;
+  } else if (x == 0) {
+      return FP_ZERO;
+  } else if (Kokkos::isnormal(x)) {
+      return FP_NORMAL;
+  } else {
+      return FP_SUBNORMAL;
+  }
+}
+#endif
+
+#if defined(KOKKOS_HALF_T_IS_FLOAT) && !KOKKOS_HALF_T_IS_FLOAT
 KOKKOS_INLINE_FUNCTION bool signbit(Kokkos::Experimental::half_t x) {
   constexpr std::uint16_t sign_mask = 1u<<15;
   return (Kokkos::bit_cast<std::uint16_t>(x) & sign_mask) != 0;
