@@ -605,40 +605,30 @@ KOKKOS_IMPL_MATH_BINARY_FUNCTION(nextafter)
 KOKKOS_IMPL_MATH_BINARY_FUNCTION(copysign)
 // Classification and comparison
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_SYCL)
-template <class T>
-KOKKOS_INLINE_FUNCTION constexpr std::enable_if_t<
-    std::is_same_v<T, float> || std::is_same_v<T, double>, int>
-fpclassify(const T x) {
-  if (x != x) {
-    return FP_NAN;
-  } else if (x == 0) {
-    return FP_ZERO;
-  } else if (Kokkos::abs(x) < Kokkos::Experimental::norm_min_v<T>) {
-    return FP_SUBNORMAL;
-  } else if (Kokkos::abs(x) == Kokkos::Experimental::infinity_v<T>) {
-    return FP_INFINITE;
-  } else {
-    return FP_NORMAL;
+#define KOKKOS_IMPL_MATH_FPCLASSIFY(SPECIFIER, TYPE)                       \
+  SPECIFIER constexpr int fpclassify(TYPE x) {                             \
+    if (x != x) {                                                          \
+      return FP_NAN;                                                       \
+    } else if (x == 0) {                                                   \
+      return FP_ZERO;                                                      \
+    } else if (Kokkos::abs(x) < Kokkos::Experimental::norm_min_v<TYPE>) {  \
+      return FP_SUBNORMAL;                                                 \
+    } else if (Kokkos::abs(x) == Kokkos::Experimental::infinity_v<TYPE>) { \
+      return FP_INFINITE;                                                  \
+    } else {                                                               \
+      return FP_NORMAL;                                                    \
+    }                                                                      \
   }
-}
 
-constexpr int fpclassify(const long double x) {
-  if (x != x) {
-    return FP_NAN;
-  } else if (x == 0) {
-    return FP_ZERO;
-  } else if (Kokkos::abs(x) < Kokkos::Experimental::norm_min_v<long double>) {
-    return FP_SUBNORMAL;
-  } else if (Kokkos::abs(x) == Kokkos::Experimental::infinity_v<long double>) {
-    return FP_INFINITE;
-  } else {
-    return FP_NORMAL;
-  }
-}
+KOKKOS_IMPL_MATH_FPCLASSIFY(KOKKOS_INLINE_FUNCTION, float)
+KOKKOS_IMPL_MATH_FPCLASSIFY(KOKKOS_INLINE_FUNCTION, double)
+KOKKOS_IMPL_MATH_FPCLASSIFY(inline, long double)
+
+#undef KOKKOS_IMPL_MATH_FPCLASSIFY
 
 template <class T>
 KOKKOS_INLINE_FUNCTION constexpr std::enable_if_t<std::is_integral_v<T>, int>
-fpclassify(const T x) {
+fpclassify(T x) {
   if (x == 0) {
     return FP_ZERO;
   } else {
