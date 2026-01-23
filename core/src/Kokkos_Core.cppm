@@ -485,6 +485,7 @@ export {
   using ::Kokkos::fmod;
   using ::Kokkos::fmodf;
   using ::Kokkos::fmodl;
+  using ::Kokkos::fpclassify;
   using ::Kokkos::hypot;
   using ::Kokkos::hypotf;
   using ::Kokkos::hypotl;
