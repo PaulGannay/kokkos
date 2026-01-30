@@ -607,7 +607,7 @@ KOKKOS_IMPL_MATH_BINARY_FUNCTION(copysign)
 // FIXME: fpclassify not available on Cuda and SYCL
 // FIXME: nvhpc's fpclassify return FP_ZERO for subnormal values.
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_SYCL) || \
-    (defined(KOKKOS_COMPILER_NVHPC) && defined(KOKKOS_ENABLE_OPENACC))
+    defined(KOKKOS_COMPILER_NVHPC)
 #define KOKKOS_IMPL_MATH_FPCLASSIFY(SPECIFIER, TYPE)                       \
   SPECIFIER constexpr int fpclassify(TYPE x) {                             \
     if (x != x) {                                                          \
