@@ -2283,10 +2283,15 @@ struct TestFpClassify {
         fpclassify(static_cast<KE::half_t>(-0.f)) != FP_ZERO ||
         fpclassify(static_cast<KE::half_t>(1.f)) != FP_NORMAL
 #if !__FINITE_MATH_ONLY__
+#if !(defined(KOKKOS_ENABLE_CUDA) &&                         \
+      defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE) && \
+      defined(KOKKOS_COMPILER_CLANG))
+        // FIXME internal compiler error for Clang+Cuda and RDC
         || fpclassify(signaling_NaN<KE::half_t>::value) != FP_NAN ||
         fpclassify(quiet_NaN<KE::half_t>::value) != FP_NAN ||
         fpclassify(infinity<KE::half_t>::value) != FP_INFINITE ||
         fpclassify(denorm_min<KE::half_t>::value) != FP_SUBNORMAL
+#endif
 #endif
     ) {
       ++e;
