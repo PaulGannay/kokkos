@@ -604,12 +604,12 @@ KOKKOS_IMPL_MATH_BINARY_FUNCTION(nextafter)
 // nexttoward
 KOKKOS_IMPL_MATH_BINARY_FUNCTION(copysign)
 // Classification and comparison
-// FIXME: fpclassify not available on Cuda and SYCL
-// FIXME: nvhpc's fpclassify return FP_ZERO for subnormal values.
+// fpclassify not available on Cuda and SYCL
+// FIXME_NVHPC nvhpc's fpclassify return FP_ZERO for subnormal values.
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_SYCL) || \
     defined(KOKKOS_COMPILER_NVHPC)
 #define KOKKOS_IMPL_MATH_FPCLASSIFY(SPECIFIER, TYPE)                       \
-  SPECIFIER constexpr int fpclassify(TYPE x) {                             \
+  SPECIFIER int fpclassify(TYPE x) {                                       \
     if (x != x) {                                                          \
       return FP_NAN;                                                       \
     } else if (x == 0) {                                                   \
