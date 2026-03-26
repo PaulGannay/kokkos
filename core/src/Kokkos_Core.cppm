@@ -708,12 +708,14 @@ export {
   using ::Kokkos::Profiling::Experimental::set_begin_parallel_for_callback;
   using ::Kokkos::Profiling::Experimental::set_begin_parallel_reduce_callback;
   using ::Kokkos::Profiling::Experimental::set_begin_parallel_scan_callback;
+  using ::Kokkos::Profiling::Experimental::set_begin_single_callback;
   using ::Kokkos::Profiling::Experimental::set_create_profile_section_callback;
   using ::Kokkos::Profiling::Experimental::set_destroy_profile_section_callback;
   using ::Kokkos::Profiling::Experimental::set_end_deep_copy_callback;
   using ::Kokkos::Profiling::Experimental::set_end_parallel_for_callback;
   using ::Kokkos::Profiling::Experimental::set_end_parallel_reduce_callback;
   using ::Kokkos::Profiling::Experimental::set_end_parallel_scan_callback;
+  using ::Kokkos::Profiling::Experimental::set_end_single_callback;
   using ::Kokkos::Profiling::Experimental::set_finalize_callback;
   using ::Kokkos::Profiling::Experimental::set_pop_region_callback;
   using ::Kokkos::Profiling::Experimental::set_profile_event_callback;
@@ -786,6 +788,7 @@ export {
   using ::Kokkos::Tools::Experimental::set_begin_parallel_for_callback;
   using ::Kokkos::Tools::Experimental::set_begin_parallel_reduce_callback;
   using ::Kokkos::Tools::Experimental::set_begin_parallel_scan_callback;
+  using ::Kokkos::Tools::Experimental::set_begin_single_callback;
   using ::Kokkos::Tools::Experimental::set_callbacks;
   using ::Kokkos::Tools::Experimental::set_create_profile_section_callback;
   using ::Kokkos::Tools::Experimental::set_deallocate_data_callback;
@@ -802,6 +805,7 @@ export {
   using ::Kokkos::Tools::Experimental::set_end_parallel_for_callback;
   using ::Kokkos::Tools::Experimental::set_end_parallel_reduce_callback;
   using ::Kokkos::Tools::Experimental::set_end_parallel_scan_callback;
+  using ::Kokkos::Tools::Experimental::set_end_single_callback;
   using ::Kokkos::Tools::Experimental::set_finalize_callback;
   using ::Kokkos::Tools::Experimental::set_init_callback;
   using ::Kokkos::Tools::Experimental::set_parse_args_callback;
