@@ -338,4 +338,20 @@ template class SYCLInternal::USMObjectMem<sycl::usm::alloc::device>;
 template class SYCLInternal::USMObjectMem<sycl::usm::alloc::host>;
 
 }  // namespace Impl
+
+std::vector<Kokkos::SYCL> create_device_space() {
+  std::vector<Kokkos::SYCL> spaces;
+  std::vector<int> devices = ::Kokkos::Impl::get_visible_devices();
+  spaces.reserve(devices.size());
+
+  auto sycl_devices = Impl::get_sycl_devices();
+
+  for (const int& device : devices) {
+    sycl::queue queue(sycl_devices[device], sycl::property::queue::in_order());
+    spaces.emplace_back(Kokkos::SYCL(queue));
+  }
+
+  return spaces;
+}
+
 }  // namespace Kokkos

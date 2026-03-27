@@ -10,6 +10,7 @@
 #include <impl/Kokkos_Error.hpp>
 #include <impl/Kokkos_Profiling.hpp>
 #include <impl/Kokkos_HostSharedPtr.hpp>
+#include <impl/Kokkos_DeviceManagement.hpp>
 
 namespace Kokkos {
 namespace Impl {
@@ -305,6 +306,9 @@ auto make_sycl_function_wrapper(const Functor& functor, Storage& storage) {
   return SYCLFunctionWrapper<Functor, Storage>(functor, storage);
 }
 }  // namespace Impl
+
+std::vector<Kokkos::SYCL> create_device_space();
+
 }  // namespace Kokkos
 
 #if defined(SYCL_DEVICE_COPYABLE) && defined(KOKKOS_ARCH_INTEL_GPU)
