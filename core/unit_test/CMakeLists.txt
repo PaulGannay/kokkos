@@ -201,6 +201,7 @@ foreach(Tag Threads;Serial;OpenMP;Cuda;HPX;OpenACC;HIP;SYCL;NextSilicon)
         Reducers_d
         Reducers_e
         Reductions_DeviceView
+        Single
         SpaceAwareAccessorAccessViolation
         SpaceAwareAccessor
         Swap
