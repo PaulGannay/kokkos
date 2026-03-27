@@ -10,7 +10,6 @@
 #include <impl/Kokkos_Error.hpp>
 #include <impl/Kokkos_Profiling.hpp>
 #include <impl/Kokkos_HostSharedPtr.hpp>
-#include <impl/Kokkos_DeviceManagement.hpp>
 
 namespace Kokkos {
 namespace Impl {

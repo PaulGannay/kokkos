@@ -14,6 +14,7 @@ import kokkos.core; // kokkos_malloc
 
 #include <impl/Kokkos_CheckedIntegerOps.hpp>
 #include <impl/Kokkos_Error.hpp>
+#include <impl/Kokkos_DeviceManagement.hpp>
 
 namespace Kokkos {
 namespace Impl {
@@ -345,6 +346,8 @@ std::vector<Kokkos::SYCL> create_device_space() {
   spaces.reserve(devices.size());
 
   auto sycl_devices = Impl::get_sycl_devices();
+
+  KOKKOS_ASSERT(sycl_devices.size() >= devices.size());
 
   for (const int& device : devices) {
     sycl::queue queue(sycl_devices[device], sycl::property::queue::in_order());

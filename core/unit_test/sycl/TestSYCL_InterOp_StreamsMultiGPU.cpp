@@ -11,7 +11,7 @@ TEST(sycl_multi_gpu, managed_views) {
 
   Kokkos::View<int *, TEST_EXECSPACE> view0(Kokkos::view_alloc("v0", execs[0]),
                                             100);
-  Kokkos::View<int *, TEST_EXECSPACE> view1(Kokkos::view_alloc("v", execs[1]),
+  Kokkos::View<int *, TEST_EXECSPACE> view1(Kokkos::view_alloc("v1", execs[1]),
                                             100);
 
   test_policies(execs[0], view0, execs[1], view1);
