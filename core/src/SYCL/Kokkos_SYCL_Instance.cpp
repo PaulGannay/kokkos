@@ -347,10 +347,9 @@ std::vector<Kokkos::SYCL> create_device_space() {
 
   auto sycl_devices = Impl::get_sycl_devices();
 
-  KOKKOS_ASSERT(sycl_devices.size() >= devices.size());
-
   for (const int& device : devices) {
-    sycl::queue queue(sycl_devices[device], sycl::property::queue::in_order());
+    sycl::queue queue(sycl_devices.at(device),
+                      sycl::property::queue::in_order());
     spaces.emplace_back(Kokkos::SYCL(queue));
   }
 

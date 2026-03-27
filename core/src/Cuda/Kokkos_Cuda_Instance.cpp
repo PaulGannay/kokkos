@@ -709,7 +709,7 @@ std::vector<Kokkos::Cuda> create_device_space() {
     KOKKOS_IMPL_CUDA_SAFE_CALL(::cudaSetDevice(device));
     KOKKOS_IMPL_CUDA_SAFE_CALL(::cudaStreamCreate(&stream));
 
-    spaces.emplace_back(Kokkos::Cuda(stream));
+    spaces.emplace_back(stream);
   }
 
   return spaces;

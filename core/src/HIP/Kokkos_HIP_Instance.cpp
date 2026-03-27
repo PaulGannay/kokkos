@@ -396,7 +396,7 @@ std::vector<Kokkos::HIP> create_device_space() {
     KOKKOS_IMPL_HIP_SAFE_CALL(::hipSetDevice(device));
     KOKKOS_IMPL_HIP_SAFE_CALL(::hipStreamCreate(&stream));
 
-    spaces.emplace_back(Kokkos::HIP(stream));
+    spaces.emplace_back(stream);
   }
 
   return spaces;
