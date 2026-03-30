@@ -341,6 +341,11 @@ class SinglePolicy : public RangePolicy<Properties...> {
       : RangePolicy<Properties...>(p) {}
 
   inline SinglePolicy() : RangePolicy<Properties...>(0, 1) {}
+
+  inline SinglePolicy(
+      const typename RangePolicy<Properties...>::traits::execution_space
+          exec_space)
+      : RangePolicy<Properties...>(exec_space, 0, 1) {}
 };
 
 }  // namespace Kokkos
