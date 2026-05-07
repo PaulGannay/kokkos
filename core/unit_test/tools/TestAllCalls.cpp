@@ -44,8 +44,8 @@ int main(int argc, char** argv) {  // NOLINT(bugprone-exception-escape)
                             }
                           });
     Kokkos::single(
-        "single", Kokkos::SinglePolicy<Kokkos::DefaultExecutionSpace>(),
-        [=](int& res) { res *= 2; }, result);
+        "single", Kokkos::SinglePolicy<execution_space>(),
+        KOKKOS_LAMBDA(int& res) { res *= 2; }, result);
     Kokkos::Profiling::pushRegion("push_region");
     Kokkos::Profiling::popRegion();
     uint32_t sectionId;
