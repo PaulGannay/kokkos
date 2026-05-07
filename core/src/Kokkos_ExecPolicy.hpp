@@ -338,14 +338,12 @@ class SinglePolicy
   using base_class = RangePolicy<Kokkos::LaunchBounds<1>, Properties...>;
 
   template <class... OtherProperties>
-  SinglePolicy(const SinglePolicy<OtherProperties...>& p)
-      : base_class(p) {}
+  SinglePolicy(const SinglePolicy<OtherProperties...>& p) : base_class(p) {}
 
   inline SinglePolicy() : base_class(0, 1) {}
 
   inline SinglePolicy(
-      const typename base_class::traits::execution_space
-          exec_space)
+      const typename base_class::traits::execution_space exec_space)
       : base_class(exec_space, 0, 1) {}
 };
 
