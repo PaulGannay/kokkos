@@ -571,16 +571,18 @@ void parallel_reduce(size_t n, Functor const& functor,
 namespace Impl {
 template <class FunctorType, class WorkTag>
 struct SingleCombinedReductorFunctorWrapper {
-  FunctorType f;
+  FunctorType m_functor;
 
   template <class WorkTagOrIndex, class IndexOrFirstRet, class... ReturnTypes>
-  auto KOKKOS_INLINE_FUNCTION operator()(WorkTagOrIndex wtOrIdx,
-                                         IndexOrFirstRet& idxOrFirstRet,
-                                         ReturnTypes&... rets) const {
+  auto KOKKOS_INLINE_FUNCTION operator()(WorkTagOrIndex&& wtOrIdx,
+                                         IndexOrFirstRet&& idxOrFirstRet,
+                                         ReturnTypes&&... rets) const {
     if constexpr (std::is_void_v<WorkTag>) {
-      f(idxOrFirstRet, rets...);
+      m_functor(std::forward<IndexOrFirstRet>(idxOrFirstRet),
+                std::forward<ReturnTypes>(rets)...);
     } else {
-      f(wtOrIdx, rets...);
+      m_functor(std::forward<WorkTagOrIndex>(wtOrIdx),
+                std::forward<ReturnTypes>(rets)...);
     }
   }
 };

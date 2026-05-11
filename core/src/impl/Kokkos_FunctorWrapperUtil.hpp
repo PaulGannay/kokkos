@@ -35,14 +35,14 @@ struct IndexlessReductionFunctorWrapper {
   template <typename WorkTagOrIndex, class IndexOrReturnType,
             typename... MaybeReturnType>
   KOKKOS_FUNCTION void operator()(const WorkTagOrIndex,
-                                  IndexOrReturnType& indexOrRet,
-                                  MaybeReturnType&... maybeRet) const {
+                                  IndexOrReturnType&& indexOrRet,
+                                  MaybeReturnType&&... maybeRet) const {
     static_assert(sizeof...(MaybeReturnType) <= 1);
     if constexpr (sizeof...(MaybeReturnType) == 0) {
-      m_functor(indexOrRet);
+      m_functor(std::forward<IndexOrReturnType>(indexOrRet));
     } else {
       static_assert(std::is_empty_v<WorkTagOrIndex>);
-      m_functor(WorkTagOrIndex{}, maybeRet...);
+      m_functor(WorkTagOrIndex{}, std::forward<MaybeReturnType>(maybeRet)...);
     }
   }
 };
