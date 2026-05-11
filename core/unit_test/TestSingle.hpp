@@ -133,12 +133,14 @@ void test_one_ouput() {
 
   // Full signature
   // Functor
+  val = 0;
   Kokkos::single("single with output+worktag+exec_space",
                  Kokkos::SinglePolicy<Kokkos::DefaultExecutionSpace, TenTag>(),
                  f, val);
   EXPECT_EQ(val, 10);
 
   // Lambda
+  val = 0;
   Kokkos::single(
       "single with output+lambda+exec_space",
       Kokkos::SinglePolicy<Kokkos::DefaultExecutionSpace>(),
@@ -146,37 +148,45 @@ void test_one_ouput() {
   EXPECT_EQ(val, 5);
 
   // Minimal
+  val = 0;
   Kokkos::single(f, val);
   EXPECT_EQ(val, 5);
 
   // +kernel_name
+  val = 0;
   Kokkos::single("single with output", f, val);
   EXPECT_EQ(val, 5);
 
   // +Policy
+  val = 0;
   Kokkos::single(Kokkos::SinglePolicy<Kokkos::DefaultExecutionSpace>(), f, val);
   EXPECT_EQ(val, 5);
 
   // +kernel_name +Policy
+  val = 0;
   Kokkos::single("single with output+exec_space",
                  Kokkos::SinglePolicy<Kokkos::DefaultExecutionSpace>(), f, val);
   EXPECT_EQ(val, 5);
 
   // +Worktag
+  val = 0;
   Kokkos::single(Kokkos::SinglePolicy<TenTag>(), f, val);
   EXPECT_EQ(val, 10);
 
   // +Worktag +Policy
+  val = 0;
   Kokkos::single(Kokkos::SinglePolicy<Kokkos::DefaultExecutionSpace, TenTag>(),
                  f, val);
   EXPECT_EQ(val, 10);
 
   // +kernel_name +Worktag
+  val = 0;
   Kokkos::single("single with output+worktag", Kokkos::SinglePolicy<TenTag>(),
                  f, val);
   EXPECT_EQ(val, 10);
 
   // +ExecSpace instance
+  val = 0;
   Kokkos::DefaultExecutionSpace exec_space;
   Kokkos::single(Kokkos::SinglePolicy(exec_space), f, val);
   exec_space.fence();
@@ -194,27 +204,32 @@ void test_multiple_outputs() {
 
     // Lambda
     // Minimal
+    val1 = val2 = 0;
     Kokkos::single(l, val1, val2);
     EXPECT_EQ(val1, 1);
     EXPECT_EQ(val2, 2);
 
     // +Label
+    val1 = val2 = 0;
     Kokkos::single("single with multiple outputs+lambda", l, val1, val2);
     EXPECT_EQ(val1, 1);
     EXPECT_EQ(val2, 2);
 
     // +Policy
+    val1 = val2 = 0;
     Kokkos::single(Kokkos::SinglePolicy(), l, val1, val2);
     EXPECT_EQ(val1, 1);
     EXPECT_EQ(val2, 2);
 
     // Full
+    val1 = val2 = 0;
     Kokkos::single("single with 2 outputs+lambda+policy",
                    Kokkos::SinglePolicy(), l, val1, val2);
     EXPECT_EQ(val1, 1);
     EXPECT_EQ(val2, 2);
 
     // Full with ExecSpace
+    val1 = val2 = 0;
     Kokkos::single("single with 2 outputs+lambda+exec_space",
                    Kokkos::SinglePolicy<Kokkos::DefaultExecutionSpace>(), l,
                    val1, val2);
@@ -224,38 +239,45 @@ void test_multiple_outputs() {
     // Functor
     CombinedReductionFunctor f{};
     // Minimal
+    val1 = val2 = 0;
     Kokkos::single(f, val1, val2);
     EXPECT_EQ(val1, 5);
     EXPECT_EQ(val2, 5);
 
     // +Label
+    val1 = val2 = 0;
     Kokkos::single("single with 2 outputs", f, val1, val2);
     EXPECT_EQ(val1, 5);
     EXPECT_EQ(val2, 5);
 
     // +Policy
+    val1 = val2 = 0;
     Kokkos::single(Kokkos::SinglePolicy(), f, val1, val2);
     EXPECT_EQ(val1, 5);
     EXPECT_EQ(val2, 5);
 
     // +Policy with WorkTag
+    val1 = val2 = 0;
     Kokkos::single(Kokkos::SinglePolicy<TenTag>(), f, val1, val2);
     EXPECT_EQ(val1, 10);
     EXPECT_EQ(val2, 10);
 
     // Full
+    val1 = val2 = 0;
     Kokkos::single("single with 2 outputs+policy", Kokkos::SinglePolicy(), f,
                    val1, val2);
     EXPECT_EQ(val1, 5);
     EXPECT_EQ(val2, 5);
 
     // Full with WorkTag
+    val1 = val2 = 0;
     Kokkos::single("single with 2 outputs+worktag",
                    Kokkos::SinglePolicy<TenTag>(), f, val1, val2);
     EXPECT_EQ(val1, 10);
     EXPECT_EQ(val2, 10);
 
     // Full with WorkTag and ExecSpace
+    val1 = val2 = 0;
     Kokkos::single(
         "single with 2 outputs+worktag+execspace",
         Kokkos::SinglePolicy<TenTag, Kokkos::DefaultExecutionSpace>(), f, val1,
@@ -264,6 +286,7 @@ void test_multiple_outputs() {
     EXPECT_EQ(val2, 10);
 
     // With ExecSpace instance
+    val1 = val2 = 0;
     Kokkos::DefaultExecutionSpace exec_space;
     Kokkos::single(Kokkos::SinglePolicy(exec_space), f, val1, val2);
     exec_space.fence();
@@ -282,24 +305,28 @@ void test_multiple_outputs() {
 
     // Lambda
     // Minimal
+    val1 = val2 = val3 = 0;
     Kokkos::single(l, val1, val2, val3);
     EXPECT_EQ(val1, 1);
     EXPECT_EQ(val2, 2);
     EXPECT_EQ(val3, 3);
 
     // +Label
+    val1 = val2 = val3 = 0;
     Kokkos::single("single with 3 outputs+lambda", l, val1, val2, val3);
     EXPECT_EQ(val1, 1);
     EXPECT_EQ(val2, 2);
     EXPECT_EQ(val3, 3);
 
     // +Policy
+    val1 = val2 = val3 = 0;
     Kokkos::single(Kokkos::SinglePolicy(), l, val1, val2, val3);
     EXPECT_EQ(val1, 1);
     EXPECT_EQ(val2, 2);
     EXPECT_EQ(val3, 3);
 
     // Full
+    val1 = val2 = val3 = 0;
     Kokkos::single("single with 3 outputs+lambda+policy",
                    Kokkos::SinglePolicy(), l, val1, val2, val3);
     EXPECT_EQ(val1, 1);
@@ -307,6 +334,7 @@ void test_multiple_outputs() {
     EXPECT_EQ(val3, 3);
 
     // Full with ExecSpace
+    val1 = val2 = val3 = 0;
     Kokkos::single("single with 3 outputs+lambda+exec_space",
                    Kokkos::SinglePolicy<Kokkos::DefaultExecutionSpace>(), l,
                    val1, val2, val3);
@@ -317,30 +345,35 @@ void test_multiple_outputs() {
     //// Functor
     CombinedReductionFunctor f{};
     // Minimal
+    val1 = val2 = val3 = 0;
     Kokkos::single(f, val1, val2, val3);
     EXPECT_EQ(val1, 5);
     EXPECT_EQ(val2, 5);
     EXPECT_EQ(val3, 5);
 
     // +Label
+    val1 = val2 = val3 = 0;
     Kokkos::single("single with 3 outputs", f, val1, val2, val3);
     EXPECT_EQ(val1, 5);
     EXPECT_EQ(val2, 5);
     EXPECT_EQ(val3, 5);
 
     // +Policy
+    val1 = val2 = val3 = 0;
     Kokkos::single(Kokkos::SinglePolicy(), f, val1, val2, val3);
     EXPECT_EQ(val1, 5);
     EXPECT_EQ(val2, 5);
     EXPECT_EQ(val3, 5);
 
     // +Policy with WorkTag
+    val1 = val2 = val3 = 0;
     Kokkos::single(Kokkos::SinglePolicy<TenTag>(), f, val1, val2, val3);
     EXPECT_EQ(val1, 10);
     EXPECT_EQ(val2, 10);
     EXPECT_EQ(val3, 10);
 
     // Full
+    val1 = val2 = val3 = 0;
     Kokkos::single("single with 3 outputs+policy", Kokkos::SinglePolicy(), f,
                    val1, val2, val3);
     EXPECT_EQ(val1, 5);
@@ -348,6 +381,7 @@ void test_multiple_outputs() {
     EXPECT_EQ(val3, 5);
 
     // Full with WorkTag
+    val1 = val2 = val3 = 0;
     Kokkos::single("single with 3 outputs+worktag",
                    Kokkos::SinglePolicy<TenTag>(), f, val1, val2, val3);
     EXPECT_EQ(val1, 10);
@@ -355,6 +389,7 @@ void test_multiple_outputs() {
     EXPECT_EQ(val3, 10);
 
     // Full with WorkTag and ExecSpace
+    val1 = val2 = val3 = 0;
     Kokkos::single(
         "single with 3 outputs+worktag+exec_space",
         Kokkos::SinglePolicy<TenTag, Kokkos::DefaultExecutionSpace>(), f, val1,
@@ -364,6 +399,7 @@ void test_multiple_outputs() {
     EXPECT_EQ(val3, 10);
 
     // With ExecSpace instance
+    val1 = val2 = val3 = 0;
     Kokkos::DefaultExecutionSpace exec_space;
     Kokkos::single(Kokkos::SinglePolicy(exec_space), f, val1, val2, val3);
     exec_space.fence();
