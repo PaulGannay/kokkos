@@ -31,16 +31,13 @@ struct TestFloatPrinting {
     char* ptr = to_chars_f(buffer, buffer + BUFFER_SIZE, val).ptr;
     if (buffer + strlen(ref) != ptr) {
       Kokkos::printf("Error: %lx != %lx\n", buffer + strlen(ref), ptr);
-      Kokkos::printf("For float %s 0x%lx\n", ref,
-                     Kokkos::bit_cast<uint64_t>(val));
+      Kokkos::printf("For float %s\n", ref);
       ++errors;
     }
 
     if (strcmp(buffer, ref) != 0) {
       Kokkos::printf("Error: %s != %s\n", buffer, ref);
-      // Kokkos::printf("For float %s\n", ref);
-      Kokkos::printf("For float %s 0x%lx\n", ref,
-                     Kokkos::bit_cast<uint64_t>(val));
+      Kokkos::printf("For float %s\n", ref);
       ++errors;
     }
 
@@ -120,5 +117,5 @@ struct TestFloatPrinting {
 
 TEST(TEST_CATEGORY, FloatPrinting) {
   TestFloatPrinting<TEST_EXECSPACE, double>();
-  // TestFloatPrinting<TEST_EXECSPACE, float>();
+  TestFloatPrinting<TEST_EXECSPACE, float>();
 }
