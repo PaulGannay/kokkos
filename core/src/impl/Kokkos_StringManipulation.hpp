@@ -110,9 +110,7 @@ KOKKOS_INLINE_FUNCTION constexpr char *strncat(char *dest, const char *src,
 //</editor-fold>
 
 //<editor-fold desc="Character conversions">
-template <class Unsigned, std::enable_if_t<std::is_integral_v<Unsigned> &&
-                                               std::is_unsigned_v<Unsigned>,
-                                           int> = 0>
+template <std::unsigned_integral Unsigned>
 KOKKOS_FUNCTION constexpr unsigned int to_chars_len(Unsigned val) {
   unsigned int const base = 10;
   unsigned int n          = 1;
@@ -123,10 +121,7 @@ KOKKOS_FUNCTION constexpr unsigned int to_chars_len(Unsigned val) {
   return n;
 }
 
-template <class FloatType,
-          std::enable_if_t<std::is_same_v<FloatType, double> ||
-                               std::is_same_v<FloatType, float>,
-                           int> = 0>
+template <std::floating_point FloatType>
 KOKKOS_FUNCTION unsigned int to_chars_len(FloatType f) {
   using uint_t            = Kokkos::equivalent_int_t<FloatType>;
   const int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
