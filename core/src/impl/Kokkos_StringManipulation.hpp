@@ -123,7 +123,7 @@ KOKKOS_FUNCTION constexpr unsigned int to_chars_len(Unsigned val) {
 
 template <std::floating_point FloatType>
 KOKKOS_FUNCTION unsigned int to_chars_len(FloatType f) {
-  using uint_t            = Kokkos::equivalent_int_t<FloatType>;
+  using uint_t                = Kokkos::equivalent_int_t<FloatType>;
   constexpr int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
   constexpr int exponent_bits = Kokkos::exponent_bits_v<FloatType>;
 
@@ -257,7 +257,7 @@ struct DecimalRepresentation {
   // Round number up (equivalent to adding 10 ^ (exp10 - size))
   KOKKOS_FUNCTION void round_up(size_t index = size - 1) {
     bool carry = true;
-    int i     = index;
+    int i      = index;
 
     while (i >= 0 && carry) {
       if (++buffer[i] > 9) {
@@ -271,14 +271,14 @@ struct DecimalRepresentation {
     // Initial number had the form "999....999", rounds to "100....000" with
     // `exp10`+1
     if (carry) {
-      shift_right(1);
+      shift_right(1, 1);
     }
   }
 
   // Shift the decimal representation in buffer shift time to the right,
   // inserting `insert` as the leading numbers. Returns the decimal
   // representation of the most significant number that was shifted out
-  KOKKOS_FUNCTION uint8_t shift_right(uint8_t insert, int shift = 1) {
+  KOKKOS_FUNCTION uint8_t shift_right(uint8_t shift, int insert) {
     if (shift < 1) {
       // nothing to do
       return 0;
@@ -358,7 +358,7 @@ struct DecimalRepresentation {
     uint8_t discarded = 0;
     // Continue adding the carry to the computed number
     while (carry > 0) {
-      discarded = shift_right(carry % 10);
+      discarded = shift_right(1, carry % 10);
       carry /= 10;
     }
 
@@ -385,7 +385,7 @@ struct DecimalRepresentation {
     }
 
     if (carry) {
-      if (shift_right(1) >= 5) {
+      if (shift_right(1, 1) >= 5) {
         round_up();
       }
     }
@@ -464,7 +464,7 @@ KOKKOS_FUNCTION to_chars_result to_chars_f(char *first, char *last,
   static_assert(std::is_same_v<FloatType, double> ||
                 std::is_same_v<FloatType, float>);
 
-  using uint_t            = Kokkos::equivalent_int_t<FloatType>;
+  using uint_t                = Kokkos::equivalent_int_t<FloatType>;
   constexpr int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
   constexpr int exponent_bits = Kokkos::exponent_bits_v<FloatType>;
 
@@ -539,7 +539,7 @@ KOKKOS_FUNCTION to_chars_result to_chars_f(char *first, char *last,
       // than the current computed number
       int shift = base.exp10 - decimal.exp10;
       if (shift > 0) {
-        if (decimal.shift_right(0, shift) >= 5) {
+        if (decimal.shift_right(shift, 0) >= 5) {
           decimal.round_up();
         }
       }
