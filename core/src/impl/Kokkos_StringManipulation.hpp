@@ -186,6 +186,7 @@ KOKKOS_FUNCTION constexpr void to_chars_impl(char *first, unsigned int len,
 // define values of portable error conditions that correspond to the POSIX error
 // codes
 enum class errc {
+  ok              = 0,
   value_too_large = 75  // equivalent POSIX error is EOVERFLOW
 };
 struct to_chars_result {
