@@ -284,7 +284,12 @@ struct DecimalRepresentation {
       return 0;
     }
 
-    uint8_t shifted_out = buffer[size - shift];
+    uint8_t shifted_out;
+    if (shift <= size) {
+      shifted_out = buffer[size - shift];
+    } else {
+      shifted_out = 0;
+    }
 
     int j = size - 1;
     while (j >= shift) {
