@@ -304,8 +304,8 @@ struct DecimalRepresentation {
   KOKKOS_FUNCTION void divide_by_power_of_two(int exp) {
     KOKKOS_ASSERT(exp <= max_div);
 
-    uint64_t dividend   = 0x0lu;
-    uint64_t divisor    = 0x1lu << exp;
+    uint64_t dividend   = 0x0llu;
+    uint64_t divisor    = 0x1llu << exp;
     std::size_t src_idx = 0;
     std::size_t res_idx = 0;
 
@@ -346,8 +346,8 @@ struct DecimalRepresentation {
   KOKKOS_FUNCTION void multiply_by_power_of_two(int exp) {
     KOKKOS_ASSERT(exp <= max_mul);
 
-    uint64_t multiplior = 0x1lu << exp;
-    uint64_t carry      = 0lu;
+    uint64_t multiplior = 0x1llu << exp;
+    uint64_t carry      = 0llu;
 
     for (int i = size - 1; i >= 0; --i) {
       uint64_t tmp = buffer[i] * multiplior + carry;
