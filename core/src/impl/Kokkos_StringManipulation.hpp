@@ -124,11 +124,11 @@ KOKKOS_FUNCTION constexpr unsigned int to_chars_len(Unsigned val) {
 template <std::floating_point FloatType>
 KOKKOS_FUNCTION unsigned int to_chars_len(FloatType f) {
   using uint_t            = Kokkos::equivalent_int_t<FloatType>;
-  const int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
-  const int exponent_bits = Kokkos::exponent_bits_v<FloatType>;
+  constexpr int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
+  constexpr int exponent_bits = Kokkos::exponent_bits_v<FloatType>;
 
-  const uint_t exp_mask      = (uint_t(1) << exponent_bits) - 1;
-  const uint_t mantissa_mask = (uint_t(1) << mantissa_bits) - 1;
+  constexpr uint_t exp_mask      = (uint_t(1) << exponent_bits) - 1;
+  constexpr uint_t mantissa_mask = (uint_t(1) << mantissa_bits) - 1;
 
   uint_t u = Kokkos::bit_cast<uint_t>(f);
 
@@ -241,8 +241,8 @@ struct DecimalRepresentation {
   // This can't be higher than 60 since we need to be able to store up to
   // (2^max_div - 1) * 9 in the remainder, bigger number wouldn't fit in a
   // uint64_t
-  static const int max_div = 60;
-  static const int max_mul = 60;
+  static constexpr int max_div = 60;
+  static constexpr int max_mul = 60;
 
   // Print buffer for debugging purpose
   void print() {
@@ -256,14 +256,14 @@ struct DecimalRepresentation {
 
   // Round number up (equivalent to adding 10 ^ (exp10 - size))
   KOKKOS_FUNCTION void round_up(size_t index = size - 1) {
-    int carry = true;
+    bool carry = true;
     int i     = index;
 
     while (i >= 0 && carry) {
       if (++buffer[i] > 9) {
         buffer[i] = 0;
       } else {
-        carry = 0;
+        carry = false;
       }
       --i;
     }
@@ -426,7 +426,8 @@ struct BaseTwoExponent : public DecimalRepresentation<FloatType, size> {
 
   KOKKOS_FUNCTION void generate_nth_exp(int exp2_target) {
     if (exp2_target < exp2) {
-      // Divide 60 by 60 until we can reach the target with one smaller step
+      // Divide max_div by max_div until we can reach the target with one
+      // smaller step
       while (exp2 - max_div > exp2_target) {
         DecimalRepresentation<FloatType, size>::divide_by_power_of_two(max_div);
         exp2 -= max_div;
@@ -464,19 +465,19 @@ KOKKOS_FUNCTION to_chars_result to_chars_f(char *first, char *last,
                 std::is_same_v<FloatType, float>);
 
   using uint_t            = Kokkos::equivalent_int_t<FloatType>;
-  const int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
-  const int exponent_bits = Kokkos::exponent_bits_v<FloatType>;
+  constexpr int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
+  constexpr int exponent_bits = Kokkos::exponent_bits_v<FloatType>;
 
-  const uint_t exp_mask      = (uint_t(1) << exponent_bits) - 1;
-  const uint_t mantissa_mask = (uint_t(1) << mantissa_bits) - 1;
+  constexpr uint_t exp_mask      = (uint_t(1) << exponent_bits) - 1;
+  constexpr uint_t mantissa_mask = (uint_t(1) << mantissa_bits) - 1;
 
   // Number of decimal digits used for internal computation
-  // This numbers don't depends from the input type, only from the number of
-  // output digits.
+  // These numbers don't depend on the input type, but on the number of output
+  // digits.
   // They were found empirically so that `to_chars_f` has the same output as
   // std::printf("%e")
-  const int precision     = 18;
-  const int exp_precision = 22;
+  constexpr int precision     = 18;
+  constexpr int exp_precision = 22;
 
   std::ptrdiff_t const len = to_chars_len(f);
   if (last - first < len) {
@@ -595,8 +596,6 @@ KOKKOS_FUNCTION to_chars_result to_chars_f(char *first, char *last,
 
   to_chars_i(out, last, abs_exp);
   out += exp_len;
-
-  *out++ = '\0';
 
   return {first + len, {}};
 }

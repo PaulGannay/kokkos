@@ -29,6 +29,7 @@ struct TestFloatPrinting {
     int errors = 0;
     char buffer[BUFFER_SIZE];
     char* ptr = to_chars_f(buffer, buffer + BUFFER_SIZE, val).ptr;
+    *ptr = '\0';
     if (buffer + strlen(ref) != ptr) {
       Kokkos::printf("Error: %lx != %lx\n", buffer + strlen(ref), ptr);
       Kokkos::printf("For float %s\n", ref);
