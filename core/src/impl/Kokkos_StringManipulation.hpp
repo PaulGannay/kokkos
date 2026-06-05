@@ -132,7 +132,7 @@ KOKKOS_FUNCTION unsigned int to_chars_len(FloatType f) {
 
   uint_t u = Kokkos::bit_cast<uint_t>(f);
 
-  // Extract double infos
+  // Extract sign, mantissa and exponent
   uint_t sign = u & (uint_t(1) << (mantissa_bits + exponent_bits));
   uint_t exp  = ((u & (exp_mask << mantissa_bits))) >> mantissa_bits;
 
@@ -490,7 +490,7 @@ KOKKOS_FUNCTION to_chars_result to_chars_f(char *first, char *last,
   }
   uint_t u = Kokkos::bit_cast<uint_t>(f);
 
-  // Extract double informations
+  // Extract sign, mantissa and exponent
   uint_t sign     = u & (uint_t(1) << (mantissa_bits + exponent_bits));
   uint_t mantissa = u & mantissa_mask;
   uint_t exp      = (u >> mantissa_bits) & exp_mask;
