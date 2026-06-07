@@ -132,7 +132,7 @@ KOKKOS_FUNCTION unsigned int to_chars_len(FloatType f) {
 
   uint_t u = Kokkos::bit_cast<uint_t>(f);
 
-  // Extract sign, mantissa and exponent
+  // Extract sign and exponent
   uint_t sign = u & (uint_t(1) << (mantissa_bits + exponent_bits));
   uint_t exp  = ((u & (exp_mask << mantissa_bits))) >> mantissa_bits;
 
@@ -322,7 +322,7 @@ struct DecimalRepresentation {
         if (src_idx < size) {
           dividend += buffer[src_idx++];
         }
-        if (dividend != 0 && dividend / divisor != 0) {
+        if (dividend != 0 && dividend >= divisor) {
           break;
         } else {
           if (first_pass) {
@@ -512,20 +512,12 @@ KOKKOS_FUNCTION to_chars_result to_chars_f(char *first, char *last,
     return {first + len, {}};
   }
 
-  // Normalize number
+  // Normalize number if needed (subnormals don't need normalization)
   if (exp != 0) {
-    // Normal number
     // Apply implicit leading 1
     mantissa |= (uint_t(1) << mantissa_bits);
     // Take implicit 1 into account for the exponent
     --exp;
-  } else {
-    if (!mantissa) {
-      // Zeroes
-      strcpy(out, "0.000000e+00");
-      return {first + len, {}};
-    }
-    // Subnormals (no need to normalize)
   }
 
   BaseTwoExponent<FloatType, exp_precision> base;
