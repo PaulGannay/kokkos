@@ -10,6 +10,8 @@ import kokkos.core;
 #include <Kokkos_Core.hpp>
 #endif
 
+#include <KokkosTest_Utils.hpp>
+
 struct TimesTwoTag {};
 
 struct Functor {
@@ -23,9 +25,7 @@ struct TenTag {};
 struct ReductionFunctor {
   KOKKOS_FUNCTION void operator()(int& res) const { res = 5; }
   KOKKOS_FUNCTION void operator()(const TenTag, int& res) const { res = 10; }
-};
 
-struct CombinedReductionFunctor {
   KOKKOS_FUNCTION void operator()(int& res1, int& res2) const {
     res1 = 5;
     res2 = 5;
@@ -48,86 +48,74 @@ struct CombinedReductionFunctor {
   }
 };
 
+// Test for the ParallelFor based API
 void test() {
-  // ParallelFor based API
+  Kokkos::DefaultExecutionSpace exec_space;
+  double expected = 5;
+
   Kokkos::View<double> v("v");
-  auto mirror = Kokkos::create_mirror_view(v);
-  mirror()    = 5;
-  Kokkos::deep_copy(v, mirror);
+  Kokkos::deep_copy(v, expected);
 
   Functor f{v};
 
-  double expected = 5;
-
   // Minimal
   Kokkos::single(f);
-  Kokkos::deep_copy(mirror, v);
   expected *= 3;
-  EXPECT_EQ(expected, mirror());
+  EXPECT_TRUE(KokkosTest::contains(exec_space, v, expected));
 
   // Minimal lambda
   Kokkos::single(KOKKOS_LAMBDA() { v() += 2; });
-  Kokkos::deep_copy(mirror, v);
   expected += 2;
-  EXPECT_EQ(expected, mirror());
+  EXPECT_TRUE(KokkosTest::contains(exec_space, v, expected));
 
   // +kernal_name +WorkTag +ExecSpace
   Kokkos::single(
       "single+worktag+exec_space",
       Kokkos::SinglePolicy<TimesTwoTag, Kokkos::DefaultExecutionSpace>(), f);
-  Kokkos::deep_copy(mirror, v);
   expected *= 2;
-  EXPECT_EQ(expected, mirror());
+  EXPECT_TRUE(KokkosTest::contains(exec_space, v, expected));
 
   // +kernel_name
   Kokkos::single("single", f);
-  Kokkos::deep_copy(mirror, v);
   expected *= 3;
-  EXPECT_EQ(expected, mirror());
+  EXPECT_TRUE(KokkosTest::contains(exec_space, v, expected));
 
   // +WorkTag
   Kokkos::single(Kokkos::SinglePolicy<TimesTwoTag>(), f);
-  Kokkos::deep_copy(mirror, v);
   expected *= 2;
-  EXPECT_EQ(expected, mirror());
+  EXPECT_TRUE(KokkosTest::contains(exec_space, v, expected));
 
   // +WorkTag +kernel_name
   Kokkos::single("single+worktag", Kokkos::SinglePolicy<TimesTwoTag>(), f);
-  Kokkos::deep_copy(mirror, v);
   expected *= 2;
-  EXPECT_EQ(expected, mirror());
+  EXPECT_TRUE(KokkosTest::contains(exec_space, v, expected));
 
   // +WorkTag +ExecSpace
   Kokkos::single(
       Kokkos::SinglePolicy<TimesTwoTag, Kokkos::DefaultExecutionSpace>(), f);
-  Kokkos::deep_copy(mirror, v);
   expected *= 2;
-  EXPECT_EQ(expected, mirror());
+  EXPECT_TRUE(KokkosTest::contains(exec_space, v, expected));
 
   // +ExecSpace
   Kokkos::single(Kokkos::SinglePolicy<Kokkos::DefaultExecutionSpace>(), f);
-  Kokkos::deep_copy(mirror, v);
   expected *= 3;
-  EXPECT_EQ(expected, mirror());
+  EXPECT_TRUE(KokkosTest::contains(exec_space, v, expected));
 
   // +Policy +kernel_name
   Kokkos::single("single+policy",
                  Kokkos::SinglePolicy<Kokkos::DefaultExecutionSpace>(), f);
-  Kokkos::deep_copy(mirror, v);
   expected *= 3;
-  EXPECT_EQ(expected, mirror());
+  EXPECT_TRUE(KokkosTest::contains(exec_space, v, expected));
 
   // +ExecSpace instance
-  Kokkos::DefaultExecutionSpace exec_space;
   Kokkos::single(Kokkos::SinglePolicy(exec_space), f);
   exec_space.fence();
-  Kokkos::deep_copy(mirror, v);
   expected *= 3;
-  EXPECT_EQ(expected, mirror());
+  EXPECT_TRUE(KokkosTest::contains(exec_space, v, expected));
 }
 
+// Test for the ParallelReduce based API with a single return value
 void test_one_ouput() {
-  // ParallelReduce based API
   int val;
   ReductionFunctor f;
 
@@ -193,7 +181,10 @@ void test_one_ouput() {
   EXPECT_EQ(val, 5);
 }
 
+// Test for the ParallelReduce based API with several return values
+// (CombinedReducer based API)
 void test_multiple_outputs() {
+  // Two args
   {
     int val1, val2;
 
@@ -237,7 +228,7 @@ void test_multiple_outputs() {
     EXPECT_EQ(val2, 2);
 
     // Functor
-    CombinedReductionFunctor f{};
+    ReductionFunctor f{};
     // Minimal
     val1 = val2 = 0;
     Kokkos::single(f, val1, val2);
@@ -294,6 +285,7 @@ void test_multiple_outputs() {
     EXPECT_EQ(val2, 5);
   }
 
+  // Three args
   {
     int val1, val2, val3;
 
@@ -342,8 +334,8 @@ void test_multiple_outputs() {
     EXPECT_EQ(val2, 2);
     EXPECT_EQ(val3, 3);
 
-    //// Functor
-    CombinedReductionFunctor f{};
+    // Functor
+    ReductionFunctor f{};
     // Minimal
     val1 = val2 = val3 = 0;
     Kokkos::single(f, val1, val2, val3);
@@ -410,7 +402,30 @@ void test_multiple_outputs() {
 }
 
 namespace Test {
-TEST(TEST_CATEGORY, single) { test(); }
-TEST(TEST_CATEGORY, single_with_output) { test_one_ouput(); }
-TEST(TEST_CATEGORY, single_with_multiple_outputs) { test_multiple_outputs(); }
+TEST(TEST_CATEGORY, single) {
+  if constexpr (!std::is_same_v<TEST_EXECSPACE,
+                                Kokkos::DefaultExecutionSpace>) {
+    GTEST_SKIP() << "Can't run test when TEST_EXECSPACE != "
+                    "Kokkos::DefaultExecutionSpace";
+  }
+  test();
+}
+
+TEST(TEST_CATEGORY, single_with_output) {
+  if constexpr (!std::is_same_v<TEST_EXECSPACE,
+                                Kokkos::DefaultExecutionSpace>) {
+    GTEST_SKIP() << "Can't run test when TEST_EXECSPACE != "
+                    "Kokkos::DefaultExecutionSpace";
+  }
+  test_one_ouput();
+}
+
+TEST(TEST_CATEGORY, single_with_multiple_outputs) {
+  if constexpr (!std::is_same_v<TEST_EXECSPACE,
+                                Kokkos::DefaultExecutionSpace>) {
+    GTEST_SKIP() << "Can't run test when TEST_EXECSPACE != "
+                    "Kokkos::DefaultExecutionSpace";
+  }
+  test_multiple_outputs();
+}
 }  // namespace Test

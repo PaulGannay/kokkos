@@ -568,26 +568,6 @@ void parallel_reduce(size_t n, Functor const& functor,
                           std::forward<ReturnTypes>(returnTypes)...);
 }
 
-namespace Impl {
-template <class FunctorType, class WorkTag>
-struct SingleCombinedReductorFunctorWrapper {
-  FunctorType m_functor;
-
-  template <class WorkTagOrIndex, class IndexOrFirstRet, class... ReturnTypes>
-  auto KOKKOS_INLINE_FUNCTION operator()(WorkTagOrIndex&& wtOrIdx,
-                                         IndexOrFirstRet&& idxOrFirstRet,
-                                         ReturnTypes&&... rets) const {
-    if constexpr (std::is_void_v<WorkTag>) {
-      m_functor(std::forward<IndexOrFirstRet>(idxOrFirstRet),
-                std::forward<ReturnTypes>(rets)...);
-    } else {
-      m_functor(std::forward<WorkTagOrIndex>(wtOrIdx),
-                std::forward<ReturnTypes>(rets)...);
-    }
-  }
-};
-}  // namespace Impl
-
 template <class PolicyType, class Functor, class ReturnType1, class ReturnType2,
           class... ReturnTypes>
 auto single(std::string const& label, PolicyType const& policy,
@@ -599,7 +579,7 @@ auto single(std::string const& label, PolicyType const& policy,
                             PolicyType, Kokkos::Impl::ThreadSingleStruct> &&
                         !Kokkos::Impl::is_specialization_of_v<
                             PolicyType, Kokkos::Impl::VectorSingleStruct>> {
-  ::Kokkos::Impl::SingleCombinedReductorFunctorWrapper<
+  ::Kokkos::Impl::IndexlessReductionFunctorWrapper<
       Functor, typename PolicyType::work_tag>
       functor_wrapper{functor};
 

@@ -14,6 +14,8 @@ template <typename Functor>
 struct IndexlessFunctorWrapper {
   Functor m_functor;
 
+  // One of WorkTagOrIndex or MaybeIndex contains the index, the other can be
+  // the worktag. We try to determine which is which and discard the index.
   template <typename WorkTagOrIndex, typename... MaybeIndex>
   KOKKOS_FUNCTION void operator()(WorkTagOrIndex, MaybeIndex...) const {
     static_assert(sizeof...(MaybeIndex) <= 1);
@@ -28,21 +30,23 @@ struct IndexlessFunctorWrapper {
 
 // Helper to allow passing an indexless functor to the parallel_reduce backend
 // through special interface such as Kokkos::GraphNodeThen and Kokkos::Single.
-template <class FunctorType>
+template <class FunctorType, class WorkTag>
 struct IndexlessReductionFunctorWrapper {
   FunctorType m_functor;
 
-  template <typename WorkTagOrIndex, class IndexOrReturnType,
-            typename... MaybeReturnType>
-  KOKKOS_FUNCTION void operator()(const WorkTagOrIndex,
-                                  IndexOrReturnType&& indexOrRet,
-                                  MaybeReturnType&&... maybeRet) const {
-    static_assert(sizeof...(MaybeReturnType) <= 1);
-    if constexpr (sizeof...(MaybeReturnType) == 0) {
-      m_functor(std::forward<IndexOrReturnType>(indexOrRet));
+  // One of WorkTagOrIndex or IndexOrFirstRet contains the index, the other can
+  // be the worktag or the first return type. We try to determine which is
+  // which and discard the index.
+  template <class WorkTagOrIndex, class IndexOrFirstRet, class... ReturnTypes>
+  KOKKOS_INLINE_FUNCTION void operator()(WorkTagOrIndex&& wtOrIdx,
+                                         IndexOrFirstRet&& idxOrFirstRet,
+                                         ReturnTypes&&... rets) const {
+    if constexpr (std::is_void_v<WorkTag>) {
+      m_functor(std::forward<IndexOrFirstRet>(idxOrFirstRet),
+                std::forward<ReturnTypes>(rets)...);
     } else {
-      static_assert(std::is_empty_v<WorkTagOrIndex>);
-      m_functor(WorkTagOrIndex{}, std::forward<MaybeReturnType>(maybeRet)...);
+      m_functor(std::forward<WorkTagOrIndex>(wtOrIdx),
+                std::forward<ReturnTypes>(rets)...);
     }
   }
 };

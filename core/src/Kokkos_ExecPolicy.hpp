@@ -340,10 +340,9 @@ class SinglePolicy
   template <class... OtherProperties>
   SinglePolicy(const SinglePolicy<OtherProperties...>& p) : base_class(p) {}
 
-  inline SinglePolicy() : base_class(0, 1) {}
+  SinglePolicy() : base_class(0, 1) {}
 
-  inline SinglePolicy(
-      const typename base_class::traits::execution_space exec_space)
+  SinglePolicy(const typename base_class::traits::execution_space exec_space)
       : base_class(exec_space, 0, 1) {}
 };
 

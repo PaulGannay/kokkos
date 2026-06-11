@@ -553,8 +553,9 @@ inline std::enable_if_t<!(Kokkos::is_view<ReturnType>::value ||
 single(const std::string& label,
        const SinglePolicy<PolicyProperties...>& single_policy,
        const FunctorType& functor, ReturnType& return_value) {
-  ::Kokkos::Impl::IndexlessReductionFunctorWrapper<FunctorType> functor_wrapper{
-      functor};
+  ::Kokkos::Impl::IndexlessReductionFunctorWrapper<
+      FunctorType, typename SinglePolicy<PolicyProperties...>::work_tag>
+      functor_wrapper{functor};
 
   ::Kokkos::parallel_reduce(label, single_policy, functor_wrapper,
                             return_value);
