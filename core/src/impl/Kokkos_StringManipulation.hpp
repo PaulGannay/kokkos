@@ -121,7 +121,10 @@ KOKKOS_FUNCTION constexpr unsigned int to_chars_len(Unsigned val) {
   return n;
 }
 
-template <std::floating_point FloatType>
+template <class FloatType,
+          std::enable_if_t<std::is_same_v<FloatType, double> ||
+                               std::is_same_v<FloatType, float>,
+                           int> = 0>
 KOKKOS_FUNCTION unsigned int to_chars_len(FloatType f) {
   using uint_t                = Kokkos::equivalent_int_t<FloatType>;
   constexpr int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
