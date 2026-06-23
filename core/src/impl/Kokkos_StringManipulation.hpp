@@ -310,7 +310,7 @@ struct DecimalRepresentation {
 
   // Divide decimal number by 2^exp
   KOKKOS_FUNCTION void divide_by_power_of_two(int exp) {
-    KOKKOS_ASSERT(exp <= max_div);
+    KOKKOS_EXPECTS(exp <= max_div);
 
     uint64_t dividend   = 0x0llu;
     uint64_t divisor    = 0x1llu << exp;
