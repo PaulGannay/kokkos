@@ -59,7 +59,7 @@ class Logger {
       Kokkos::deep_copy(h_logs,
                         Kokkos::subview(m_logs, Kokkos::pair{0, num_elements}));
     }
-    return std::move(res);
+    return res;
   }
 
   bool full() const { return (insertion_attempts() >= capacity()); }
@@ -104,8 +104,8 @@ class Logger {
 template <typename ErrorType,
           typename DeviceType = typename DefaultExecutionSpace::device_type>
 struct ErrorReport {
-  int m_reporter_id;
-  ErrorType m_error;
+  int reporter_id;
+  ErrorType error;
 };
 
 template <typename ErrorType,

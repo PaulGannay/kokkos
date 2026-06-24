@@ -38,8 +38,8 @@ template <typename ReportType>
 void checkReportersAndReportsAgree(
     const std::vector<Kokkos::Experimental::ErrorReport<ReportType>> &reports) {
   for (size_t i = 0; i < reports.size(); ++i) {
-    EXPECT_EQ(1, reports[i].m_reporter_id % 2);
-    EXPECT_EQ(reports[i].m_reporter_id, reports[i].m_error.m_data1);
+    EXPECT_EQ(1, reports[i].reporter_id % 2);
+    EXPECT_EQ(reports[i].reporter_id, reports[i].error.m_data1);
   }
 }
 
