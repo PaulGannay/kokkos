@@ -205,7 +205,7 @@ void ErrorReporter_test_resize() {
   Kokkos::Experimental::ErrorReporter<int, TEST_EXECSPACE> logger("Reporter",
                                                                   10);
 
-  // produce more errors when we can store
+  // produce more errors that we can store
   Kokkos::parallel_for(
       "TestErrorReporter_resize", Kokkos::RangePolicy<TEST_EXECSPACE>(0, 20),
       KOKKOS_LAMBDA(int i) { logger.try_emplace(i, 0); });

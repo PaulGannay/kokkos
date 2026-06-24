@@ -90,7 +90,7 @@ class Logger {
     if (idx >= 0 && (idx < m_logs.extent_int(0))) {
       log_type* mem = &m_logs(idx);
       mem->~LogType();
-      return new (mem) LogType(args...);
+      return new (mem) LogType{args...};
     } else {
       return nullptr;
     }
