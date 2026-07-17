@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <Kokkos_BitManipulation.hpp>
 #include <Kokkos_Assert.hpp>
+#include <Kokkos_Printf.hpp>
 
 namespace Kokkos {
 namespace Impl {
@@ -560,7 +561,6 @@ KOKKOS_FUNCTION to_chars_result to_chars_f(char *first, char *last,
       // `buffer[6]` is an  odd number.
       // This is the `tie to even` part of the rounding.
       need_round = (decimal.buffer[precision - 1] % 2) == 1;
-      Kokkos::printf("Tie to even\n");
     } else {
       need_round = true;
     }

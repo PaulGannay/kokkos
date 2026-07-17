@@ -73,6 +73,11 @@ struct TestFloatPrinting {
     errors += to_chars_helper_f(FloatType(6e20), "6.000000e+20");
     errors += to_chars_helper_f(FloatType(6e37), "6.000000e+37");
 
+    // Because of ties-to-even, 10000005 should be rounded down and 10000015
+    // should be rounded up.
+    errors += to_chars_helper_f(FloatType(10000005.0), "1.000000e+07");
+    errors += to_chars_helper_f(FloatType(10000015.0), "1.000002e+07");
+
     if constexpr (std::is_same_v<FloatType, double>) {
       errors += to_chars_helper_f(FloatType(1e100), "1.000000e+100");
       errors +=
@@ -132,65 +137,71 @@ struct TestFloatPrinting {
   }
 };
 
-#ifdef FULL_TEST
-int check(double d) {
-  char ref[30];
-  char ref_string[30];
-  sprintf(ref_string, "%%5.%ie", 7 - 1);
+#ifdef FLOAT_DEVELOPMENT_TESTS
+// This test will check that the output of Kokkos::to_chars_f(d) is identical
+// to the result of std::printf("%e", d) for a fraction of the existing double,
+// it can be very long (even when testing only 1/2^31 doubles, it will still
+// take hours), so it should only be run when checking the results of changes
+// in Kokkos::to_chars_f and not when doing standard CI.
+// It can only run on host since it needs to run sprintf().
+bool check(double d) {
+  bool ret = true;
 
-  double ref_number = d;
-  sprintf(ref, ref_string, ref_number);
+  char ref[30] = {};
+  sprintf(ref, "%e", d);
 
-  bool ret = false;
-
-  if (std::isnan(d) || std::isinf(d)) {
-    return ret;
-  }
-
-  char buffer[25];
+  char buffer[30] = {};
   using Kokkos::Impl::to_chars_f;
-  to_chars_f(buffer, buffer + 25, d);
+  to_chars_f(buffer, buffer + 30, d);
 
-  for (int i = 0; i < 10; ++i) {
+  int i = 0;
+  while (ref[i] != '\0') {
     if (ref[i] != buffer[i]) {
-      printf("0x%lx\n", std::bit_cast<uint64_t>(d));
-      printf("%s !=\n", ref);
-      printf("%s\n", buffer);
+      char err[512];
+      char* err_buf = err;
+      err_buf += sprintf(err_buf, "0x%lx\n", std::bit_cast<uint64_t>(d));
+      err_buf += sprintf(err_buf, "%s !=\n", ref);
+      err_buf += sprintf(err_buf, "%s\n", buffer);
 
       for (int j = 0; j < i; ++j) {
-        printf(" ");
+        err_buf += sprintf(err_buf, " ");
       }
-      printf("^\n");
-      ret = true;
+      err_buf += sprintf(err_buf, "^\n");
+      printf("%s", err);
+
+      ret = false;
       break;
     }
+    ++i;
   }
 
   return ret;
 }
 
 void do_random_test() {
-  Kokkos::Random_XorShift64_Pool<TEST_EXECSPACE> random_pool(/*seed=*/12345);
+  Kokkos::Random_XorShift64_Pool<Kokkos::DefaultHostExecutionSpace> random_pool(
+      /*seed=*/12345);
 
-  // Don't check negative numbers, implementation is simple enough, bugs should
-  // be caught by the standard tests
-  uint64_t max = 0x1llu << 28;
+  uint64_t max = 0x1llu << 35;
+  Kokkos::View<uint64_t, Kokkos::DefaultHostExecutionSpace::memory_space> total(
+      "total", 1);
+
+  Kokkos::deep_copy(total, 0);
+
   Kokkos::parallel_for(
-      Kokkos::RangePolicy<TEST_EXECSPACE>(0, max),
+      Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, max),
       KOKKOS_LAMBDA(uint64_t counter) {
         auto generator = random_pool.get_state();
-
-        double d = Kokkos::bit_cast<double>(generator.urand64());
-
-        // do not forget to release the state of the engine
+        double d       = Kokkos::bit_cast<double>(generator.urand64());
         random_pool.free_state(generator);
-        ASSERT_EQ(check(d), 0);
+
+        EXPECT_TRUE(check(d));
 
         ++counter;
-
-        if (counter % 1'000'000 == 0) {
-          Kokkos::printf("%f%% - %e\n", (double)counter / (double)max * 100.,
-                         d);
+        uint64_t tmp = Kokkos::atomic_inc_fetch(&total());
+        if (tmp % 1'000'000 == 0) {
+          Kokkos::printf("%f%% (%llu/%llu) - %e\n",
+                         (double)tmp / (double)max * 100., tmp, max, d);
         }
       });
 }
@@ -200,7 +211,7 @@ TEST(TEST_CATEGORY, FloatPrinting) {
   TestFloatPrinting<TEST_EXECSPACE, double>();
   TestFloatPrinting<TEST_EXECSPACE, float>();
 
-#ifdef FULL_TEST
+#ifdef FLOAT_DEVELOPMENT_TESTS
   do_random_test();
 #endif
 }
