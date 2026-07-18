@@ -34,9 +34,9 @@ struct TestFloatPrinting {
     if (buffer + strlen(ref) != ptr) {
       Kokkos::printf("Error: %lx != %lx\n", buffer + strlen(ref), ptr);
       if constexpr (std::is_same_v<FloatType, float>) {
-        Kokkos::printf("For float %s\n", ref);
+        Kokkos::printf("For float %s 0x%x\n", ref, Kokkos::bit_cast<uint32_t>(val));
       } else {
-        Kokkos::printf("For double %s\n", ref);
+        Kokkos::printf("For double %s 0x%lx\n", ref, Kokkos::bit_cast<uint64_t>(val));
       }
       ++errors;
     }
@@ -44,9 +44,9 @@ struct TestFloatPrinting {
     if (strcmp(buffer, ref) != 0) {
       Kokkos::printf("Error: %s != %s\n", buffer, ref);
       if constexpr (std::is_same_v<FloatType, float>) {
-        Kokkos::printf("For float %s\n", ref);
+        Kokkos::printf("For float %s 0x%x\n", ref, Kokkos::bit_cast<uint32_t>(val));
       } else {
-        Kokkos::printf("For double %s\n", ref);
+        Kokkos::printf("For double %s 0x%lx\n", ref, Kokkos::bit_cast<uint64_t>(val));
       }
       ++errors;
     }
@@ -91,13 +91,13 @@ struct TestFloatPrinting {
 
       // Numbers just before or after the point were we go from 12 characters
       // to 13.
-      errors += to_chars_helper_f(Kokkos::bit_cast<double>(0x2b617f7d402b1835),
-                                  "1.000000e-99");
       errors += to_chars_helper_f(Kokkos::bit_cast<double>(0x2b617f7d402b1834),
                                   "1.000000e-99");
       errors += to_chars_helper_f(Kokkos::bit_cast<double>(0x2b617f7d402b1833),
-                                  "9.999999e-100");
+                                  "1.000000e-99");
       errors += to_chars_helper_f(Kokkos::bit_cast<double>(0x2b617f7d402b1832),
+                                  "9.999999e-100");
+      errors += to_chars_helper_f(Kokkos::bit_cast<double>(0x2b617f7d402b1831),
                                   "9.999999e-100");
 
       errors += to_chars_helper_f(Kokkos::bit_cast<double>(0x54b249ad163d7d24),
@@ -122,6 +122,8 @@ struct TestFloatPrinting {
                                   "4.345847e-311");
       errors += to_chars_helper_f(Kokkos::bit_cast<double>(0x00072800000002AF),
                                   "9.951990e-309");
+      errors += to_chars_helper_f(Kokkos::bit_cast<double>(0x1cef5f80c024cc14),
+                                  "2.597822e-169");
     }
 
     if constexpr (std::is_same_v<FloatType, float>) {
@@ -133,10 +135,16 @@ struct TestFloatPrinting {
           to_chars_helper_f(Kokkos::finite_max_v<FloatType>, "3.402823e+38");
       errors +=
           to_chars_helper_f(-Kokkos::finite_max_v<FloatType>, "-3.402823e+38");
+
+      // Numbers that were incorrectly displayed at some point during the
+      // debugging process
+      errors += to_chars_helper_f(Kokkos::bit_cast<float>(0x9aab),
+                                  "5.548441e-41");
     }
   }
 };
 
+//#define FLOAT_DEVELOPMENT_TESTS
 #ifdef FLOAT_DEVELOPMENT_TESTS
 // This test will check that the output of Kokkos::to_chars_f(d) is identical
 // to the result of std::printf("%e", d) for a fraction of the existing double,
@@ -144,7 +152,8 @@ struct TestFloatPrinting {
 // take hours), so it should only be run when checking the results of changes
 // in Kokkos::to_chars_f and not when doing standard CI.
 // It can only run on host since it needs to run sprintf().
-bool check(double d) {
+template <typename T>
+bool check(T d) {
   bool ret = true;
 
   char ref[30] = {};
@@ -159,7 +168,11 @@ bool check(double d) {
     if (ref[i] != buffer[i]) {
       char err[512];
       char* err_buf = err;
-      err_buf += sprintf(err_buf, "0x%lx\n", std::bit_cast<uint64_t>(d));
+      if constexpr (std::is_same_v<T, float>) {
+        err_buf += sprintf(err_buf, "0x%x\n", Kokkos::bit_cast<uint32_t>(d));
+      } else {
+        err_buf += sprintf(err_buf, "0x%lx\n", Kokkos::bit_cast<uint64_t>(d));
+      }
       err_buf += sprintf(err_buf, "%s !=\n", ref);
       err_buf += sprintf(err_buf, "%s\n", buffer);
 
@@ -178,11 +191,35 @@ bool check(double d) {
   return ret;
 }
 
+void test_all_floats() {
+  uint32_t max = ~0x0u;
+
+  Kokkos::View<uint64_t, Kokkos::DefaultHostExecutionSpace::memory_space> total(
+      "total", 1);
+
+  Kokkos::deep_copy(total, 0);
+
+  Kokkos::parallel_for(
+      Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, max),
+      KOKKOS_LAMBDA(uint32_t counter) {
+        float f = Kokkos::bit_cast<float>(counter);
+
+        ASSERT_TRUE(check(f));
+
+        ++counter;
+        uint64_t tmp = Kokkos::atomic_inc_fetch(&total());
+        if (tmp % 1'000'000 == 0) {
+          Kokkos::printf("%f%% (%llu/%llu) - %e\n",
+                         (double)tmp / (double)max * 100., tmp, max, f);
+        }
+      });
+}
+
 void do_random_test() {
   Kokkos::Random_XorShift64_Pool<Kokkos::DefaultHostExecutionSpace> random_pool(
       /*seed=*/12345);
 
-  uint64_t max = 0x1llu << 35;
+  uint64_t max = 0x1llu << 30;
   Kokkos::View<uint64_t, Kokkos::DefaultHostExecutionSpace::memory_space> total(
       "total", 1);
 
@@ -195,7 +232,9 @@ void do_random_test() {
         double d       = Kokkos::bit_cast<double>(generator.urand64());
         random_pool.free_state(generator);
 
-        EXPECT_TRUE(check(d));
+        bool b = check(d);
+        ASSERT_TRUE(b);
+        KOKKOS_ASSERT(b);
 
         ++counter;
         uint64_t tmp = Kokkos::atomic_inc_fetch(&total());
@@ -212,6 +251,7 @@ TEST(TEST_CATEGORY, FloatPrinting) {
   TestFloatPrinting<TEST_EXECSPACE, float>();
 
 #ifdef FLOAT_DEVELOPMENT_TESTS
+  test_all_floats();
   do_random_test();
 #endif
 }
