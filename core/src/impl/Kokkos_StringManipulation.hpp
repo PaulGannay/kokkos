@@ -288,7 +288,7 @@ struct DecimalRepresentation {
     }
   }
 
-  // Shift the decimal representation in buffer shift time to the right,
+  // Shift the decimal representation in buffer `shift` time to the right,
   // inserting `insert` as the leading numbers.
   KOKKOS_FUNCTION void shift_right(uint8_t shift, int insert) {
     if (shift < 1) {
@@ -354,7 +354,7 @@ struct DecimalRepresentation {
       first_pass = false;
 
       if (res_idx < size) {
-        buffer[res_idx++] = dividend / divisor;
+        buffer[res_idx++] = dividend >> exp;
         dividend %= divisor;
       }
     } while (res_idx < size);
@@ -370,7 +370,7 @@ struct DecimalRepresentation {
     rem -= carry;
 
     for (int i = size - 1; i >= 0; --i) {
-      uint64_t tmp = buffer[i] * multiplior + carry;
+      uint64_t tmp = ((uint64_t)(buffer[i]) << exp) + carry;
       buffer[i]    = tmp % 10;
       carry        = tmp / 10;
     }
