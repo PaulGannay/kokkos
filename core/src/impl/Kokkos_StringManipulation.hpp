@@ -9,7 +9,6 @@
 #include <cstdint>
 #include <type_traits>
 #include <Kokkos_BitManipulation.hpp>
-#include <Kokkos_Assert.hpp>
 #include <Kokkos_Printf.hpp>
 
 namespace Kokkos {
