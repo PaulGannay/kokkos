@@ -136,12 +136,12 @@ KOKKOS_FUNCTION unsigned int to_chars_len(FloatType f) {
   uint_t u = Kokkos::bit_cast<uint_t>(f);
 
   // Extract sign and exponent
-  uint_t sign = u & (uint_t(1) << (mantissa_bits + exponent_bits));
+  uint_t sign = u >> (mantissa_bits + exponent_bits);
   uint_t exp  = ((u & (exp_mask << mantissa_bits))) >> mantissa_bits;
 
   unsigned int ret = 0;
 
-  ret += sign ? 1 : 0;
+  ret += sign;
   if (exp == exp_mask) {
     // 'inf' and 'nan' are both 3 chars
     return ret + 3;
@@ -291,7 +291,7 @@ class DecimalRepresentation {
 
     if (shift > size) {
       for (int i = size; i < shift; ++i) {
-        frac = insert + frac / 10.;
+        frac = (insert + frac) / 10.;
       }
     }
 
@@ -320,7 +320,7 @@ class DecimalRepresentation {
 
       if (dividend < divisor && res_idx == 0) {
         // As long as we haven't found a non-zero digit, we don't output 0, we
-        // only track the exponent of the futur most significant digit
+        // only track the exponent of the future most significant digit
         --exp10;
       } else {
         // Otherwise, buffer receive the result of the division and dividend
@@ -436,10 +436,9 @@ class BaseTwoExponent : public DecimalRepresentation<FloatType, size> {
 
   // Exponent bias (different from the IEEE754 one, to take subnormals into
   // account)
-  static constexpr int bias =
-      (typename Kokkos::equivalent_int_t<FloatType>(1)
-       << (Kokkos::exponent_bits<FloatType>::value - 1)) +
-      Kokkos::mantissa_bits<FloatType>::value - 2;
+  static constexpr int bias = (typename Kokkos::equivalent_int_t<FloatType>(1)
+                               << (Kokkos::exponent_bits_v<FloatType> - 1)) +
+                              Kokkos::mantissa_bits_v<FloatType> - 2;
 
   // Exponent of the power stored in `buffer`
   // Stored with the total bias added
@@ -471,7 +470,6 @@ class BaseTwoExponent : public DecimalRepresentation<FloatType, size> {
       // Last division needed to reach the target
       if (exp2 != exp2_target) {
         decimal::divide_by_power_of_two(exp2 - exp2_target);
-        exp2 -= (exp2 - exp2_target);
       }
     } else if (exp2_target > exp2) {
       // Multiply max_mul by max_mul until we can reach the target with one

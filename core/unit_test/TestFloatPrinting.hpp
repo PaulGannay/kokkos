@@ -210,7 +210,6 @@ void test_all_floats() {
 
         ASSERT_TRUE(check(f));
 
-        ++counter;
         uint64_t tmp = Kokkos::atomic_inc_fetch(&total());
         if (tmp % 1'000'000 == 0) {
           Kokkos::printf("%f%% (%llu/%llu) - %e\n",
@@ -238,7 +237,6 @@ void do_random_test() {
 
         ASSERT_TRUE(check(d));
 
-        ++counter;
         uint64_t tmp = Kokkos::atomic_inc_fetch(&total());
         if (tmp % 1'000'000 == 0) {
           Kokkos::printf("%f%% (%llu/%llu) - %e\n",
