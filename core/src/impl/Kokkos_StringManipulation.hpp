@@ -275,10 +275,10 @@ class DecimalRepresentation {
 
   // Shift the decimal representation in buffer `shift` time to the right,
   // inserting `insert` as the leading numbers.
-  KOKKOS_FUNCTION void shift_right(uint8_t shift, int insert) {
+  KOKKOS_FUNCTION void shift_right(int shift, uint8_t insert) {
     for (int i = size - 1; i >= 0; --i) {
       // Add discarded digit to the remainder if the curent cell is shifted out
-      if (std::size_t(i) + shift >= size) {
+      if (std::size_t(i) + std::size_t(shift) >= size) {
         frac = (buffer[i] + frac) / 10.;
       }
 
@@ -289,7 +289,7 @@ class DecimalRepresentation {
       }
     }
 
-    if (shift > size) {
+    if (std::size_t(shift) > size) {
       for (int i = size; i < shift; ++i) {
         frac = (insert + frac) / 10.;
       }
