@@ -28,16 +28,20 @@ struct TestFloatPrinting {
 
     int errors = 0;
     char buffer[BUFFER_SIZE];
-    char* ptr = to_chars_f(buffer, buffer + BUFFER_SIZE, val).ptr;
-    *ptr      = '\0';
-    if (buffer + strlen(ref) != ptr) {
+    char* ptr      = to_chars_f(buffer, buffer + BUFFER_SIZE, val).ptr;
+    *ptr           = '\0';
+    int ref_length = strlen(ref);
+    if (buffer + ref_length != ptr) {
       Kokkos::printf("Error %s:%i:\n", file, line);
-      Kokkos::printf("  %lx != %lx\n", buffer + strlen(ref), ptr);
+      Kokkos::printf(
+          "  String size of reference (%s) is %i while size of result (%s) is "
+          "%lu\n",
+          ref, ref_length, buffer, ptr - buffer);
       if constexpr (std::is_same_v<FloatType, float>) {
-        Kokkos::printf("For float %s 0x%x\n", ref,
+        Kokkos::printf("For float %s (0x%x)\n", ref,
                        Kokkos::bit_cast<uint32_t>(val));
       } else {
-        Kokkos::printf("For double %s 0x%lx\n", ref,
+        Kokkos::printf("For double %s (0x%lx)\n", ref,
                        Kokkos::bit_cast<uint64_t>(val));
       }
       ++errors;
@@ -47,10 +51,10 @@ struct TestFloatPrinting {
       Kokkos::printf("Error %s:%i:\n", file, line);
       Kokkos::printf("  %s != %s\n", buffer, ref);
       if constexpr (std::is_same_v<FloatType, float>) {
-        Kokkos::printf("For float %s 0x%x\n", ref,
+        Kokkos::printf("For float %s (0x%x)\n", ref,
                        Kokkos::bit_cast<uint32_t>(val));
       } else {
-        Kokkos::printf("For double %s 0x%lx\n", ref,
+        Kokkos::printf("For double %s (0x%lx)\n", ref,
                        Kokkos::bit_cast<uint64_t>(val));
       }
       ++errors;
