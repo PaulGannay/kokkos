@@ -3,13 +3,8 @@
 
 #include <gtest/gtest.h>
 #include <Kokkos_Random.hpp>
-
 #include <Kokkos_Macros.hpp>
-#ifdef KOKKOS_ENABLE_EXPERIMENTAL_CXX20_MODULES
-import kokkos.core;
-#else
 #include <Kokkos_Core.hpp>
-#endif
 
 template <class Space, class FloatType>
 struct TestFloatPrinting {

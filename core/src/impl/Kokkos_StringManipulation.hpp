@@ -470,6 +470,7 @@ class BaseTwoExponent : public DecimalRepresentation<FloatType, size> {
       // Last division needed to reach the target
       if (exp2 != exp2_target) {
         decimal::divide_by_power_of_two(exp2 - exp2_target);
+        exp2 = exp2_target;
       }
     } else if (exp2_target > exp2) {
       // Multiply max_mul by max_mul until we can reach the target with one
@@ -482,9 +483,9 @@ class BaseTwoExponent : public DecimalRepresentation<FloatType, size> {
       // Last multiplication needed to reach the target
       if (exp2 != exp2_target) {
         decimal::multiply_by_power_of_two(exp2_target - exp2);
+        exp2 = exp2_target;
       }
     }
-    exp2 = exp2_target;
   }
 };
 
