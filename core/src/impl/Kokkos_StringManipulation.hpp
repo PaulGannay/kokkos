@@ -130,14 +130,13 @@ KOKKOS_FUNCTION unsigned int to_chars_len(FloatType f) {
   constexpr int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
   constexpr int exponent_bits = Kokkos::exponent_bits_v<FloatType>;
 
-  constexpr uint_t exp_mask      = (uint_t(1) << exponent_bits) - 1;
-  constexpr uint_t mantissa_mask = (uint_t(1) << mantissa_bits) - 1;
+  constexpr uint_t exp_mask = (uint_t(1) << exponent_bits) - 1;
 
   uint_t u = Kokkos::bit_cast<uint_t>(f);
 
   // Extract sign and exponent
   uint_t sign = u >> (mantissa_bits + exponent_bits);
-  uint_t exp  = ((u & (exp_mask << mantissa_bits))) >> mantissa_bits;
+  uint_t exp  = (u >> mantissa_bits) & exp_mask;
 
   unsigned int ret = 0;
 
@@ -164,8 +163,13 @@ KOKKOS_FUNCTION unsigned int to_chars_len(FloatType f) {
     //  previous number 0x2b617f7d402b1833 rounds to 9.9999999e-100
     //  - 0x54b249ad163d7d25 is the last number that rounds to 9.9999999e+99,
     //  0x54b249ad163d7d26 rounds to 1.0000000e+100
-    u = u & (exp_mask << mantissa_bits | mantissa_mask);
+    u &= (uint_t(1) << (mantissa_bits + exponent_bits)) - uint_t(1);
+#ifdef KOKKOS_ENABLE_SYCL
+    // FIXME: `u != 0` doesn't have the correct value in SYCL when f == -0.
+    if (f != 0 && (u < 0x2b617f7d402b1834 || u > 0x54b249ad163d7d25)) {
+#else
     if ((u != 0 && u < 0x2b617f7d402b1834) || u > 0x54b249ad163d7d25) {
+#endif
       return ret + 13;
     }
   }
