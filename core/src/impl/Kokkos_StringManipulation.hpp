@@ -530,9 +530,9 @@ KOKKOS_FUNCTION to_chars_result to_chars_f(char *first, char *last,
   // Inf and NaN
   if (exp == exp_mask) {
     if (mantissa) {
-      strcpy(out, "nan");
+      Kokkos::Impl::strcpy(out, "nan");
     } else {
-      strcpy(out, "inf");
+      Kokkos::Impl::strcpy(out, "inf");
     }
     return {first + len, {}};
   }
