@@ -108,11 +108,11 @@ struct Kokkos::Impl::equivalent_int_helper<float> {
 };
 template <>
 struct Kokkos::Impl::mantissa_bits_helper<float> {
-  static constexpr int value = 23;
+  static constexpr unsigned int value = 23;
 };
 template <>
 struct Kokkos::Impl::exponent_bits_helper<float> {
-  static constexpr int value = 8;
+  static constexpr unsigned int value = 8;
 };
 
 template <>
@@ -121,10 +121,10 @@ struct Kokkos::Impl::equivalent_int_helper<double> {
 };
 template <>
 struct Kokkos::Impl::mantissa_bits_helper<double> {
-  static constexpr int value = 52;
+  static constexpr unsigned int value = 52;
 };
 template <>
 struct Kokkos::Impl::exponent_bits_helper<double> {
-  static constexpr int value = 11;
+  static constexpr unsigned int value = 11;
 };
 #endif

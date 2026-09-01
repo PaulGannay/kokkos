@@ -126,15 +126,14 @@ KOKKOS_FUNCTION unsigned int to_chars_len(FloatType f) {
   static_assert(std::is_same_v<FloatType, double> ||
                 std::is_same_v<FloatType, float>);
 
-  using uint_t                = Kokkos::equivalent_int_t<FloatType>;
-  constexpr int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
-  constexpr int exponent_bits = Kokkos::exponent_bits_v<FloatType>;
+  using uint_t                         = Kokkos::equivalent_int_t<FloatType>;
+  constexpr unsigned int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
+  constexpr unsigned int exponent_bits = Kokkos::exponent_bits_v<FloatType>;
 
-  constexpr uint_t exp_mask = (uint_t(1) << exponent_bits) - 1;
-
-  uint_t u = Kokkos::bit_cast<uint_t>(f);
+  constexpr uint_t exp_mask = (uint_t(1) << exponent_bits) - uint_t(1);
 
   // Extract sign and exponent
+  uint_t u    = Kokkos::bit_cast<uint_t>(f);
   uint_t sign = u >> (mantissa_bits + exponent_bits);
   uint_t exp  = (u >> mantissa_bits) & exp_mask;
 
@@ -153,8 +152,8 @@ KOKKOS_FUNCTION unsigned int to_chars_len(FloatType f) {
   //  - 6 fractional numbers
   //  - 1 exponent marker ('e')
   //  - 1 exponent sign ('+' or '-')
-  //  - 2 digits padded with 0 for the exponent if it is between -99 and 99, 3
-  //  digits if it is bigger
+  //  - 2 digits, padded with 0, for the exponent if it is between -99 and 99, 3
+  //  digits if it is smaller than -99 or bigger than 99.
 
   if constexpr (std::is_same_v<FloatType, double>) {
     // Check whether the exponent has two or three decimal digits by comparing
@@ -206,7 +205,6 @@ struct to_chars_result {
 template <class Integral>
 KOKKOS_FUNCTION constexpr to_chars_result to_chars_i(char *first, char *last,
                                                      Integral value) {
-  // NOLINTBEGIN(bugprone-invalid-enum-default-initialization)
   using Unsigned = std::conditional_t<sizeof(Integral) <= sizeof(unsigned int),
                                       unsigned int, unsigned long long>;
   Unsigned unsigned_val = value;  // NOLINT(bugprone-signed-char-misuse)
@@ -225,19 +223,20 @@ KOKKOS_FUNCTION constexpr to_chars_result to_chars_i(char *first, char *last,
   }
   to_chars_impl(first, len, unsigned_val);
   return {first + len, {}};
-  // NOLINTEND(bugprone-invalid-enum-default-initialization)
 }
 //</editor-fold>
 
 /*
  * Decimal representation of a floating point number
  */
-template <typename FloatType, std::size_t size>
+template <typename FloatType, std::size_t precision>
 class DecimalRepresentation {
  public:
+  using uint_t = Kokkos::equivalent_int_t<FloatType>;
+
   // Buffer that contains the decimal representation of a number in scientific
   // notation (without decimal separator)
-  uint8_t buffer[size];
+  uint8_t buffer[precision];
   // Exponent of the decimal representation stored
   int exp10;
   // For instance, if the number stored is 2^10, `buffer` contains
@@ -247,7 +246,7 @@ class DecimalRepresentation {
   // frac is the fractional part of the floating point number that is beyond
   // the decimal representation. It is always included between 0 and 1
   // (excluded).
-  // For instance, if size is 3, and the number stored is 2^-6 = 0.015625:
+  // For instance, if precision is 3 and the number stored is 2^-6 = 0.015625:
   //  - exp10 = -2
   //  - buffer = 156
   //  - frac = 0.25
@@ -260,13 +259,13 @@ class DecimalRepresentation {
 
   // Print buffer for debugging purpose
   KOKKOS_FUNCTION void print() const {
-    char tmp[size + 2];
+    char tmp[precision + 2];
     tmp[0] = buffer[0] + '0';
     tmp[1] = '.';
-    for (std::size_t i = 2; i < size + 1; ++i) {
+    for (std::size_t i = 2; i < precision + 1; ++i) {
       tmp[i] = buffer[i - 1] + '0';
     }
-    tmp[size + 1] = '\0';
+    tmp[precision + 1] = '\0';
     Kokkos::printf("%se%+03i (%e)", tmp, exp10, frac);
   }
 
@@ -274,15 +273,15 @@ class DecimalRepresentation {
   // This can't be higher than 60 since we need to be able to store up to
   // (2^max_div - 1) * 9 in the remainder/carry: bigger exponent would overflow
   // an uint64_t
-  static constexpr int max_div = 60;
-  static constexpr int max_mul = 60;
+  static constexpr uint_t max_div = 60;
+  static constexpr uint_t max_mul = 60;
 
   // Shift the decimal representation in buffer `shift` time to the right,
   // inserting `insert` as the leading numbers.
   KOKKOS_FUNCTION void shift_right(int shift, uint8_t insert) {
-    for (int i = size - 1; i >= 0; --i) {
+    for (int i = precision - 1; i >= 0; --i) {
       // Add discarded digit to the remainder if the curent cell is shifted out
-      if (std::size_t(i) + std::size_t(shift) >= size) {
+      if (std::size_t(i) + std::size_t(shift) >= precision) {
         frac = (buffer[i] + frac) / 10.;
       }
 
@@ -293,8 +292,8 @@ class DecimalRepresentation {
       }
     }
 
-    if (std::size_t(shift) > size) {
-      for (int i = size; i < shift; ++i) {
+    if (std::size_t(shift) > precision) {
+      for (int i = precision; i < shift; ++i) {
         frac = (insert + frac) / 10.;
       }
     }
@@ -304,7 +303,7 @@ class DecimalRepresentation {
 
   // Divide decimal number by 2^exp
   // Returns garbage if exp > max_div
-  KOKKOS_FUNCTION void divide_by_power_of_two(int exp) {
+  KOKKOS_FUNCTION void divide_by_power_of_two(uint_t exp) {
     uint64_t dividend   = 0x0llu;
     uint64_t divisor    = 0x1llu << exp;
     std::size_t src_idx = 0;
@@ -314,7 +313,7 @@ class DecimalRepresentation {
       // Update dividend with the next digit (coming either from the decimal
       // buffer or from `frac`)
       dividend *= 10;
-      if (src_idx < size) {
+      if (src_idx < precision) {
         dividend += buffer[src_idx++];
       } else {
         frac *= 10.;
@@ -323,36 +322,40 @@ class DecimalRepresentation {
       }
 
       if (dividend < divisor && res_idx == 0) {
-        // As long as we haven't found a non-zero digit, we don't output 0, we
+        // As long as we haven't found a non-zero digit, we don't output 0: we
         // only track the exponent of the future most significant digit
         --exp10;
       } else {
-        // Otherwise, buffer receive the result of the division and dividend
+        // Otherwise, buffer receives the result of the division and dividend
         // the remainder
         buffer[res_idx++] = dividend >> exp;
+        // divisor is a power of two: use optimisation x % 2^n == x & (2^n - 1)
         dividend &= divisor - 1;
       }
-    } while (res_idx < size);
+    } while (res_idx < precision);
 
     frac = ((double)dividend + frac) / (double)divisor;
   }
 
   // Multiply decimal number by 2^exp
   // Returns garbage if exp > max_mul
-  KOKKOS_FUNCTION void multiply_by_power_of_two(int exp) {
-    frac *= 0x1llu << exp;
+  KOKKOS_FUNCTION void multiply_by_power_of_two(uint_t exp) {
+    const uint64_t multiplier = 0x1llu << exp;
+
+    frac *= multiplier;
     uint64_t carry = frac;
     frac -= carry;
 
-    for (int i = size - 1; i >= 0; --i) {
-      uint64_t tmp = ((uint64_t)(buffer[i]) << exp) + carry;
+    // Multiply each digit of the input by 2^n
+    for (int i = precision - 1; i >= 0; --i) {
+      uint64_t tmp = (uint64_t)(buffer[i]) * multiplier + carry;
       buffer[i]    = tmp % 10;
       carry        = tmp / 10;
     }
 
     // Continue adding the carry to the computed number
     while (carry > 0) {
-      shift_right(1, carry % 10);  // shift_right update the exponent
+      shift_right(1, carry % 10);  // shift_right updates the exponent
       carry /= 10;
     }
   }
@@ -367,7 +370,7 @@ class DecimalRepresentation {
         // In case `frac` is exactly 0.5, we round up if `buffer[6]` is an odd
         // number, down otherwise.
         // This is the `tie to even` part of the rounding.
-        round_up = (buffer[size - 1] % 2) == 1;
+        round_up = (buffer[precision - 1] % 2) == 1;
       } else {
         round_up = true;
       }
@@ -379,7 +382,7 @@ class DecimalRepresentation {
     }
 
     // Add 1 to the decimal representation (the carry can propagate)
-    for (int i = size - 1; i >= 0; --i) {
+    for (int i = precision - 1; i >= 0; --i) {
       if (++buffer[i] > 9) {
         buffer[i] = 0;
       } else {
@@ -392,8 +395,8 @@ class DecimalRepresentation {
     shift_right(1, 1);
   }
 
-  KOKKOS_FUNCTION DecimalRepresentation<FloatType, size> &operator+=(
-      DecimalRepresentation<FloatType, size> rhs) {
+  KOKKOS_FUNCTION DecimalRepresentation<FloatType, precision> &operator+=(
+      DecimalRepresentation<FloatType, precision> rhs) {
     // Shift operands to ensure both have the same exponent
     if (rhs.exp10 < exp10) {
       rhs.shift_right(exp10 - rhs.exp10, 0);
@@ -406,7 +409,7 @@ class DecimalRepresentation {
     int carry = frac;
     frac -= carry;
 
-    for (int i = size - 1; i >= 0; --i) {
+    for (int i = precision - 1; i >= 0; --i) {
       // buffer[i] <= 9, rhs.buffer[i] <= 9, carry <= 1: the sum can never be
       // bigger than 19, the new carry can't be bigger than 1.
       buffer[i] += rhs.buffer[i] + carry;
@@ -429,10 +432,11 @@ class DecimalRepresentation {
 /**
  * Decimal representation of a power of two
  */
-template <class FloatType, std::size_t size>
-class BaseTwoExponent : public DecimalRepresentation<FloatType, size> {
+template <class FloatType, std::size_t precision>
+class BaseTwoExponent : public DecimalRepresentation<FloatType, precision> {
  protected:
-  using decimal = DecimalRepresentation<FloatType, size>;
+  using uint_t  = Kokkos::equivalent_int_t<FloatType>;
+  using decimal = DecimalRepresentation<FloatType, precision>;
   using decimal::buffer;
   using decimal::exp10;
   using decimal::max_div;
@@ -440,13 +444,13 @@ class BaseTwoExponent : public DecimalRepresentation<FloatType, size> {
 
   // Exponent bias (different from the IEEE754 one, to take subnormals into
   // account)
-  static constexpr int bias = (typename Kokkos::equivalent_int_t<FloatType>(1)
-                               << (Kokkos::exponent_bits_v<FloatType> - 1)) +
-                              Kokkos::mantissa_bits_v<FloatType> - 2;
+  static constexpr uint_t bias =
+      (uint_t(1) << (Kokkos::exponent_bits_v<FloatType> - 1)) +
+      Kokkos::mantissa_bits_v<FloatType> - 2;
 
   // Exponent of the power stored in `buffer`
   // Stored with the total bias added
-  int exp2;
+  uint_t exp2;
 
  public:
   // Initialize with the decimal representation of 2^0 = 1
@@ -457,16 +461,16 @@ class BaseTwoExponent : public DecimalRepresentation<FloatType, size> {
 
   KOKKOS_FUNCTION void print() const {
     decimal::print();
-    Kokkos::printf(" = 2^%i", exp2 - bias);
+    Kokkos::printf(" = 2^%i", (int)exp2 - (int)bias);
   }
 
   // Generate the decimal representation of 2 ^ exp2_target, using the current
   // representation as the basis for the computation
-  KOKKOS_FUNCTION void generate_nth_exp(int exp2_target) {
+  KOKKOS_FUNCTION void generate_nth_exp(uint_t exp2_target) {
     if (exp2_target < exp2) {
       // Divide max_div by max_div until we can reach the target with one
       // smaller step
-      while (exp2 - max_div > exp2_target) {
+      while (exp2 > exp2_target + max_div) {
         decimal::divide_by_power_of_two(max_div);
         exp2 -= max_div;
       }
@@ -499,26 +503,27 @@ KOKKOS_FUNCTION to_chars_result to_chars_f(char *first, char *last,
   static_assert(std::is_same_v<FloatType, double> ||
                 std::is_same_v<FloatType, float>);
 
-  using uint_t                = Kokkos::equivalent_int_t<FloatType>;
-  constexpr int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
-  constexpr int exponent_bits = Kokkos::exponent_bits_v<FloatType>;
+  using uint_t                         = Kokkos::equivalent_int_t<FloatType>;
+  constexpr unsigned int mantissa_bits = Kokkos::mantissa_bits_v<FloatType>;
+  constexpr unsigned int exponent_bits = Kokkos::exponent_bits_v<FloatType>;
 
   constexpr uint_t exp_mask      = (uint_t(1) << exponent_bits) - 1;
   constexpr uint_t mantissa_mask = (uint_t(1) << mantissa_bits) - 1;
 
   // Number of decimal digits outputed
-  constexpr int precision = 7;
+  constexpr std::size_t precision = 7;
 
+  // Check that we have enough space to output the result
   std::ptrdiff_t const len = to_chars_len(f);
   if (last - first < len) {
     return {last, errc::value_too_large};
   }
-  uint_t u = Kokkos::bit_cast<uint_t>(f);
 
-  // Extract sign, mantissa and exponent
+  // Extract sign, exponent and mantissa
+  uint_t u        = Kokkos::bit_cast<uint_t>(f);
   uint_t sign     = u >> (mantissa_bits + exponent_bits);
-  uint_t mantissa = u & mantissa_mask;
   uint_t exp      = (u >> mantissa_bits) & exp_mask;
+  uint_t mantissa = u & mantissa_mask;
 
   char *out = first;
 
@@ -545,7 +550,7 @@ KOKKOS_FUNCTION to_chars_result to_chars_f(char *first, char *last,
     --exp;
   }
 
-  // Decimal representation of the power of twos that will be added together to
+  // Decimal representation of the powers of two that will be added together to
   // compute the result
   BaseTwoExponent<FloatType, precision> base;
 
@@ -555,9 +560,8 @@ KOKKOS_FUNCTION to_chars_result to_chars_f(char *first, char *last,
   bool found_set_bit = false;
   // Loop over each bit of the mantissa, add the corresponding power of 2 if
   // the bit is set
-  for (uint64_t mask = 0x1; mask < (uint_t(1) << (mantissa_bits + 1));
-       mask <<= 1, ++exp) {
-    if (mantissa & mask) {
+  while (mantissa) {
+    if (mantissa & uint_t(1)) {
       base.generate_nth_exp(exp);
 
       if (!found_set_bit) {
@@ -568,30 +572,35 @@ KOKKOS_FUNCTION to_chars_result to_chars_f(char *first, char *last,
         decimal += base;
       }
     }
+
+    mantissa >>= 1u;
+    ++exp;
   }
 
   decimal.round();
 
-  // Copy the digits to the output (add decimal separator)
+  // Copy the digits to the output, with decimal separator
   *out++ = decimal.buffer[0] + '0';
   *out++ = '.';
-  for (int i = 1; i < precision; ++i) {
+  for (std::size_t i = 1; i < precision; ++i) {
     *out++ = decimal.buffer[i] + '0';
   }
 
   // Write exponent
-  *out++               = 'e';
-  *out++               = decimal.exp10 >= 0 ? '+' : '-';
-  unsigned int abs_exp = decimal.exp10 >= 0 ? decimal.exp10 : -decimal.exp10;
-  int exp_len          = to_chars_len(abs_exp);
-  // Add a leading '0' if exp length is smaller than 2
-  if (exp_len < 2) {
+  *out++ = 'e';
+  int abs_exp;
+  if (decimal.exp10 >= 0) {
+    *out++  = '+';
+    abs_exp = decimal.exp10;
+  } else {
+    *out++  = '-';
+    abs_exp = -decimal.exp10;
+  }
+  if (abs_exp <= 9) {
+    // Pad with 0 if exp is only 1 digit long
     *out++ = '0';
   }
-  to_chars_i(out, last, abs_exp);
-  out += exp_len;
-
-  return {first + len, {}};
+  return {to_chars_i(out, last, abs_exp).ptr, {}};
 }
 
 }  // namespace Impl
