@@ -25,6 +25,7 @@ namespace Kokkos {
 /** \brief Execute \c functor on a specific ExecutionSpace in a single thread.
  *
  */
+// single clause returning no value (based on parallel_for)
 template <class FunctorType, class... PolicyProperties>
 inline void single(const std::string& str,
                    const SinglePolicy<PolicyProperties...>& single_policy,
@@ -65,11 +66,12 @@ inline void single(const FunctorType& functor) {
   ::Kokkos::single("", functor);
 }
 
+// single clause returning values (based on parallel_reduce)
 template <class FunctorType, class ReturnType, class... PolicyProperties>
-inline std::enable_if_t<!(Kokkos::is_view<ReturnType>::value ||
-                          Kokkos::is_reducer<ReturnType>::value ||
-                          std::is_pointer_v<ReturnType>)>
-single(const std::string& label,
+requires (!Kokkos::is_view<ReturnType>::value 
+       && !Kokkos::is_reducer<ReturnType>::value 
+       && !std::is_pointer_v<ReturnType>)
+inline void single(const std::string& label,
        const SinglePolicy<PolicyProperties...>& single_policy,
        const FunctorType& functor, ReturnType& return_value) {
   ::Kokkos::Impl::IndexlessReductionFunctorWrapper<
@@ -81,21 +83,21 @@ single(const std::string& label,
 }
 
 template <class FunctorType, class ReturnType, class... PolicyProperties>
-inline std::enable_if_t<!(Kokkos::is_view<ReturnType>::value ||
-                          Kokkos::is_reducer<ReturnType>::value ||
-                          std::is_pointer_v<ReturnType>)&&std::
-                            is_invocable_v<FunctorType, ReturnType&>>
-single(const SinglePolicy<PolicyProperties...>& single_policy,
+requires (!Kokkos::is_view<ReturnType>::value &&
+    !Kokkos::is_reducer<ReturnType>::value &&
+    !std::is_pointer_v<ReturnType>
+    && std::is_invocable_v<FunctorType, ReturnType&>)
+inline void single(const SinglePolicy<PolicyProperties...>& single_policy,
        const FunctorType& functor, ReturnType& return_value) {
   ::Kokkos::single("", single_policy, functor, return_value);
 }
 
 template <class FunctorType, class ReturnType>
-inline std::enable_if_t<!(Kokkos::is_view<ReturnType>::value ||
-                          Kokkos::is_reducer<ReturnType>::value ||
-                          std::is_pointer_v<ReturnType>)&&std::
-                            is_invocable_v<FunctorType, ReturnType&>>
-single(const std::string label, const FunctorType& functor,
+requires(!Kokkos::is_view<ReturnType>::value &&
+    !Kokkos::is_reducer<ReturnType>::value &&
+    !std::is_pointer_v<ReturnType>
+    && std::is_invocable_v<FunctorType, ReturnType&>)
+inline void single(const std::string label, const FunctorType& functor,
        ReturnType& return_value) {
   using execution_space =
       typename Impl::FunctorPolicyExecutionSpace<FunctorType,
@@ -105,11 +107,11 @@ single(const std::string label, const FunctorType& functor,
 }
 
 template <class FunctorType, class ReturnType>
-inline std::enable_if_t<std::is_invocable_v<FunctorType, ReturnType&> &&
-                        !(Kokkos::is_view<ReturnType>::value ||
-                          Kokkos::is_reducer<ReturnType>::value ||
-                          std::is_pointer_v<ReturnType>)>
-single(const FunctorType& functor, ReturnType& return_value) {
+requires(std::is_invocable_v<FunctorType, ReturnType&> &&
+    !Kokkos::is_view<ReturnType>::value &&
+    !Kokkos::is_reducer<ReturnType>::value &&
+    !std::is_pointer_v<ReturnType>)
+inline void single(const FunctorType& functor, ReturnType& return_value) {
   ::Kokkos::single("", functor, return_value);
 }
 }  // namespace Kokkos
