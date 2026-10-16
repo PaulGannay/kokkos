@@ -11,6 +11,7 @@ import kokkos.core;
 #endif
 
 #include <TestDefaultDeviceType_Category.hpp>
+#include "../TestSingle.hpp"
 
 namespace Test {
 
