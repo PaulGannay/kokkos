@@ -129,9 +129,190 @@ template <typename Exec, typename ViewType>
     return ::testing::AssertionSuccess();
 }
 
+enum class TypeIdentifier: char {
+  c_string = 0x1,
+  boolean,
+  i8,
+  i16,
+  i32,
+  i64,
+  u8,
+  u16,
+  u32,
+  u64,
+  f16,
+  b16,
+  f32,
+  f64,
+  f128,
+};
+
+template <typename T>
+struct ToTypeIdentifier {
+  static_assert(false, "Non supported type");
+  static constexpr char value = 0;
+};
+
+#define KOKKOS_TO_TYPE_IDENTIFIER(type, type_identifier) \
+  template <> \
+  struct ToTypeIdentifier<type> { \
+    static constexpr char value = static_cast<char>(TypeIdentifier::type_identifier); \
+  };
+
+KOKKOS_TO_TYPE_IDENTIFIER(const char*, c_string);
+KOKKOS_TO_TYPE_IDENTIFIER(bool, boolean);
+KOKKOS_TO_TYPE_IDENTIFIER(std::int8_t, i8);
+KOKKOS_TO_TYPE_IDENTIFIER(std::int16_t, i16);
+KOKKOS_TO_TYPE_IDENTIFIER(std::int32_t, i32);
+KOKKOS_TO_TYPE_IDENTIFIER(std::int64_t, i64);
+KOKKOS_TO_TYPE_IDENTIFIER(std::uint8_t, u8);
+KOKKOS_TO_TYPE_IDENTIFIER(std::uint16_t, u16);
+KOKKOS_TO_TYPE_IDENTIFIER(std::uint32_t, u32);
+KOKKOS_TO_TYPE_IDENTIFIER(std::uint64_t, u64);
+//KOKKOS_TO_TYPE_IDENTIFIER(Kokkos::half_t, f16);
+//KOKKOS_TO_TYPE_IDENTIFIER(Kokkos::bhalf_t, b16);
+KOKKOS_TO_TYPE_IDENTIFIER(float, f32);
+KOKKOS_TO_TYPE_IDENTIFIER(double, f64);
+KOKKOS_TO_TYPE_IDENTIFIER(long double, f128);
+#undef KOKKOS_TO_TYPE_IDENTIFIER
+
+
+template <typename T>
+void print_from_type_identifier(std::ostream& os, const char* data) {
+  T val;
+  Kokkos::Impl::memcpy(&val, data, sizeof(T));
+  os << val << '\0';
+  data += sizeof(T);
+}
+
+void print_variable(TypeIdentifier t, std::ostream& os, const char* data) {
+  switch(t) {
+    case TypeIdentifier::c_string:
+      os << data;
+      while (*data++ != '\0');
+      break;
+    case TypeIdentifier::boolean:
+      print_from_type_identifier<bool>(os, data);
+      break;
+    case TypeIdentifier::i8:
+      print_from_type_identifier<int8_t>(os, data);
+      break;
+    case TypeIdentifier::i16:
+      print_from_type_identifier<int16_t>(os, data);
+      break;
+    case TypeIdentifier::i32:
+      print_from_type_identifier<int32_t>(os, data);
+      break;
+    case TypeIdentifier::i64:
+      print_from_type_identifier<int64_t>(os, data);
+      break;
+    case TypeIdentifier::u8:
+      print_from_type_identifier<uint8_t>(os, data);
+      break;
+    case TypeIdentifier::u16:
+      print_from_type_identifier<uint16_t>(os, data);
+      break;
+    case TypeIdentifier::u32:
+      print_from_type_identifier<uint32_t>(os, data);
+      break;
+    case TypeIdentifier::u64:
+      print_from_type_identifier<uint64_t>(os, data);
+      break;
+    case TypeIdentifier::f32:
+      print_from_type_identifier<float>(os, data);
+      break;
+    case TypeIdentifier::f64:
+      print_from_type_identifier<double>(os, data);
+      break;
+    default:
+      // Error when serializing string
+      KOKKOS_ASSERT(false);
+      break;
+  }
+}
+
+template <std::size_t capacity>
+class UnformatedString {
+ private:
+  char m_data[capacity];
+  std::size_t m_size;
+  bool m_full;
+
+ public:
+  KOKKOS_FUNCTION constexpr UnformatedString() : m_size(0), m_full(false) {}
+
+  KOKKOS_FUNCTION constexpr UnformatedString(const char* str) : m_size(0), m_full(false) {
+    *this << str;
+  }
+
+  template <typename T>
+  KOKKOS_FUNCTION constexpr UnformatedString<capacity> &operator<<(const T i) {
+    if (m_full) {
+      return *this;
+    }
+
+    // +1 because we need room for the type tag
+    std::size_t needed_size = sizeof(T) + sizeof(char);
+    // Comparison written this way to avoid risk of overflowing size_t
+    if ((needed_size > capacity) || (capacity - needed_size < m_size)) {
+      m_full = true;
+      return *this;
+    }
+
+    m_data[m_size++] = ToTypeIdentifier<T>::value;
+    Kokkos::Impl::memcpy(&m_data[m_size], &i, sizeof(T));
+    m_size += sizeof(T);
+
+    return *this;
+  }
+
+  KOKKOS_FUNCTION constexpr UnformatedString<capacity> &operator<<(const char *string) {
+    if (m_full) {
+      return *this;
+    }
+
+    // Not enough space for \0 + type tag
+    if (m_size + 2 >= capacity) {
+      m_full = true;
+      return *this;
+    }
+
+    m_data[m_size++] = ToTypeIdentifier<const char*>::value;
+
+    for (;*string != '\0' && m_size < capacity; ++string) {
+      m_data[m_size++] = *string;
+    }
+
+    if (m_size >= capacity) {
+      // In case we exit because max capacity was reached, we need to append the \0.
+      m_data[capacity - 1] = '\0';
+      m_full = true;
+      return *this;
+    }
+
+    m_data[m_size++] = '\0';
+
+    return *this;
+  }
+
+  friend std::ostream& operator << (std::ostream& os, const UnformatedString& serializedString) {
+    const char* data = serializedString.m_data; 
+    while ((data - serializedString.m_data) < serializedString.m_size) {
+      TypeIdentifier var_type = static_cast<TypeIdentifier>(*(data++));
+      print_variable(var_type, os, data);
+    }
+
+    if (serializedString.m_full) {
+      os << "...";
+    }
+
+    return os;
+  }
+};
+
 template <size_t string_capacity>
 struct TestLog {
-  Kokkos::Impl::StaticString<string_capacity> error_message;
+  UnformatedString<string_capacity> error_message;
 };
 
 template <class Space, size_t string_capacity>
@@ -168,7 +349,7 @@ struct TestReporter {
 namespace Impl {
 template <size_t capacity>
 struct OptionalString {
-  using String = Kokkos::Impl::StaticString<capacity>;
+  using String = UnformatedString<capacity>;
   String* m_ss;
 
   KOKKOS_FUNCTION OptionalString(String* ss = nullptr) : m_ss(ss) {}

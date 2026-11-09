@@ -192,6 +192,16 @@ KOKKOS_FUNCTION constexpr to_chars_result to_chars_i(char *first, char *last,
 
 //</editor-fold>
 
+KOKKOS_INLINE_FUNCTION void* memcpy(void* dest, const void* src, std::size_t count) {
+  char* dest_char = reinterpret_cast<char*>(dest);
+  const char* src_char = reinterpret_cast<const char*>(src);
+  for (std::size_t i = 0; i < count; ++i) {
+    *dest_char++ = *src_char++;
+  }
+
+  return dest;
+}
+
 template <std::size_t capacity>
 class StaticString {
   // Need room to guarantee we can at least print the trunc pattern
